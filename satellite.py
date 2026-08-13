@@ -12,6 +12,7 @@ import numpy as np
 from PIL import Image
 import rasterio
 from rasterio.enums import Resampling
+from rasterio.io import MemoryFile
 from rasterio.windows import from_bounds
 from rasterio.warp import transform_bounds
 import requests
@@ -32,6 +33,8 @@ class Scene:
     cloud_cover: float
     visual_href: str
     thumbnail_href: str | None = None
+    preview_href: str | None = None
+    bounds: tuple[float, float, float, float] | None = None
 
     @property
     def datetime(self) -> datetime:
@@ -51,8 +54,8 @@ def bbox_from_point(
     """Return a WGS84 square around a point, safely clamped to the globe."""
     if not -90 <= latitude <= 90 or not -180 <= longitude <= 180:
         raise ValueError("Coordonnées hors limites.")
-    if not 0.5 <= width_km <= 50:
-        raise ValueError("La largeur doit être comprise entre 0,5 et 50 km.")
+    if not 0.5 <= width_km <= 80:
+        raise ValueError("La largeur doit être comprise entre 0,5 et 80 km.")
     half_lat = width_km / 2 / 110.574
     cos_lat = max(math.cos(math.radians(latitude)), 0.05)
     half_lon = width_km / 2 / (111.320 * cos_lat)
@@ -76,10 +79,28 @@ def _scene_from_feature(feature: dict[str, Any]) -> Scene | None:
         cloud_cover=float(feature.get("properties", {}).get("eo:cloud_cover") or 0),
         visual_href=visual,
         thumbnail_href=assets.get("thumbnail", {}).get("href"),
+        preview_href=assets.get("preview", {}).get("href"),
+        bounds=(tuple(feature["bbox"]) if feature.get("bbox") else None),
     )
 
 
-def parse_scenes(features: list[dict[str, Any]]) -> list[Scene]:
+def _intersection_area(
+    first: tuple[float, float, float, float] | None,
+    second: tuple[float, float, float, float] | None,
+) -> float:
+    if first is None or second is None:
+        return 0.0
+    west = max(first[0], second[0])
+    south = max(first[1], second[1])
+    east = min(first[2], second[2])
+    north = min(first[3], second[3])
+    return max(0.0, east - west) * max(0.0, north - south)
+
+
+def parse_scenes(
+    features: list[dict[str, Any]],
+    target_bbox: tuple[float, float, float, float] | None = None,
+) -> list[Scene]:
     """Parse, sort and de-duplicate overlapping tiles from a STAC response."""
     parsed = [scene for feature in features if (scene := _scene_from_feature(feature))]
     parsed.sort(key=lambda scene: (scene.datetime, -scene.cloud_cover))
@@ -87,7 +108,16 @@ def parse_scenes(features: list[dict[str, Any]]) -> list[Scene]:
     for scene in parsed:
         key = scene.datetime.replace(second=0, microsecond=0).isoformat()
         current = unique.get(key)
-        if current is None or scene.cloud_cover < current.cloud_cover:
+        scene_coverage = _intersection_area(scene.bounds, target_bbox)
+        current_coverage = _intersection_area(current.bounds, target_bbox) if current else -1
+        if (
+            current is None
+            or scene_coverage > current_coverage
+            or (
+                scene_coverage == current_coverage
+                and scene.cloud_cover < current.cloud_cover
+            )
+        ):
             unique[key] = scene
     return sorted(unique.values(), key=lambda scene: scene.datetime)
 
@@ -113,7 +143,7 @@ def search_scenes(
         response.raise_for_status()
     except requests.RequestException as exc:
         raise SatelliteError(f"Catalogue Sentinel-2 indisponible : {exc}") from exc
-    scenes = parse_scenes(response.json().get("features", []))
+    scenes = parse_scenes(response.json().get("features", []), bbox)
     return [scene for scene in scenes if scene.cloud_cover <= cloud_limit]
 
 
@@ -141,6 +171,8 @@ def load_scene_png(
             GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
             CPL_VSIL_CURL_ALLOWED_EXTENSIONS="TIF,tif",
             GDAL_HTTP_MULTIRANGE="YES",
+            GDAL_HTTP_CONNECTTIMEOUT="10",
+            GDAL_HTTP_TIMEOUT="45",
         ):
             with rasterio.open(scene.visual_href) as source:
                 projected = transform_bounds(
@@ -165,6 +197,40 @@ def load_scene_png(
     return output.getvalue()
 
 
+def load_scene_preview_png(
+    scene: Scene,
+    bbox: tuple[float, float, float, float],
+    output_size: int = 720,
+) -> bytes:
+    """Download the small georeferenced preview and crop it for fast movies."""
+    if not scene.preview_href:
+        return load_scene_png(scene, bbox, output_size)
+    try:
+        response = requests.get(scene.preview_href, timeout=(10, 30))
+        response.raise_for_status()
+        with MemoryFile(response.content) as memory_file:
+            with memory_file.open() as source:
+                projected = transform_bounds(
+                    "EPSG:4326", source.crs, *bbox, densify_pts=21
+                )
+                window = from_bounds(*projected, transform=source.transform)
+                data = source.read(
+                    indexes=(1, 2, 3),
+                    window=window,
+                    out_shape=(3, output_size, output_size),
+                    resampling=Resampling.bilinear,
+                    boundless=True,
+                    fill_value=0,
+                )
+    except (requests.RequestException, OSError, rasterio.errors.RasterioError) as exc:
+        raise SatelliteError(f"Aperçu Sentinel-2 illisible : {exc}") from exc
+
+    rgb = np.moveaxis(data, 0, -1)
+    rgb = _to_uint8(rgb)
+    output = BytesIO()
+    Image.fromarray(rgb, mode="RGB").save(output, format="JPEG", quality=88)
+    return output.getvalue()
+
+
 def utc_today() -> date:
     return datetime.now(timezone.utc).date()
-

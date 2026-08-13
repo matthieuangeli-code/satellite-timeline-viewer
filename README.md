@@ -1,38 +1,59 @@
-# Satellite Timeline Viewer
+# Satellite Timeline
 
-Une application Streamlit personnelle pour choisir n’importe quel endroit sur une carte mondiale, récupérer les acquisitions publiques Sentinel-2 disponibles et les parcourir avec un curseur temporel.
+A personal Streamlit app for exploring public Sentinel-2 imagery in two modes.
 
-## Fonctionnement
+## Delta movie
 
-1. Cliquez sur la carte pour placer le centre de la zone.
-2. Choisissez une emprise de 1 à 30 km, une période et une limite de nébulosité.
-3. Cliquez sur **Charger les photos de cette zone**.
-4. Déplacez le curseur temporel pour parcourir les images ; il s’ouvre sur la plus récente.
+Choose one of ten curated river deltas and build a chronological satellite time-lapse:
 
-Les données proviennent de Sentinel-2 L2A via le catalogue public Earth Search d’Element 84 et les COG AWS Open Data. Aucune clé API n’est nécessaire.
+- Mississippi, Nile, Mekong and Ganges–Brahmaputra;
+- Danube, Rhône and Niger inland delta;
+- Amazon, Lena and Okavango inland delta.
 
-## Installation
+The player includes every successfully readable acquisition matching the chosen period and catalogue-cloud threshold. It provides:
+
+- play and pause;
+- previous and next frame;
+- draggable time scrubber;
+- 0.5×, 1×, 2× and 4× playback speed;
+- optional looping;
+- the real date, UTC time and catalogue cloud value on every frame.
+
+The movie uses the small georeferenced Sentinel-2 preview for fast loading. It is intended to reveal large changes in water, sediment, vegetation, ice and coastline—not fine details. Frames are observations, not interpolated animation.
+
+## Anywhere on Earth
+
+Click anywhere on the world map, choose an area and browse the available acquisitions one at a time with the timeline slider.
+
+## Run locally
 
 ```powershell
 cd C:\Users\matth\Business\satellite-timeline-viewer
+.\.venv\Scripts\streamlit.exe run streamlit_app.py --server.port 8502
+```
+
+Open <http://localhost:8502>.
+
+For a fresh installation:
+
+```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
-streamlit run streamlit_app.py --server.port 8502
 ```
 
-Puis ouvrir <http://localhost:8502>.
+No API key is required. The app uses the public Earth Search catalogue and Sentinel-2 COG/preview assets on AWS Open Data.
 
 ## Tests
 
 ```powershell
-python -m pytest -q
+.\.venv\Scripts\python.exe -m pytest -q
 ```
 
-## Limites
+## Interpretation limits
 
-- La nébulosité du catalogue concerne la tuile Sentinel-2 entière, pas uniquement la zone affichée.
-- Sentinel-2 fournit une résolution de 10 m en couleur naturelle, pas une photographie à très haute résolution.
-- Une acquisition peut être partiellement nuageuse même si elle respecte le seuil choisi.
-- La recherche est limitée à 200 résultats, ce qui couvre normalement les deux années proposées pour un point.
-- La carte de sélection utilise les tuiles OpenStreetMap et nécessite également une connexion internet.
+- Catalogue cloud cover applies to the complete Sentinel tile, not just the displayed crop.
+- Tides, seasons, cloud, haze, snow and sun angle can look like geographic movement.
+- Sentinel-2 natural colour is suitable for large-scale change, not precise shoreline surveying.
+- The movie omits a catalogue acquisition if its preview cannot be downloaded or read.
+- The two-year option can contain many frames and take longer on the first build; later identical builds use the Streamlit cache.

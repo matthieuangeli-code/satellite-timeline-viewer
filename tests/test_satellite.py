@@ -9,7 +9,11 @@ def feature(identifier, acquired, cloud, visual=True):
     return {
         "id": identifier,
         "properties": {"datetime": acquired, "eo:cloud_cover": cloud},
-        "assets": {"visual": {"href": f"https://example.test/{identifier}.tif"}}
+        "bbox": [1.0, 2.0, 3.0, 4.0],
+        "assets": {
+            "visual": {"href": f"https://example.test/{identifier}.tif"},
+            "preview": {"href": f"https://example.test/{identifier}-preview.tif"},
+        }
         if visual
         else {},
     }
@@ -28,6 +32,12 @@ def test_bbox_validates_inputs():
         bbox_from_point(0, 0, 100)
 
 
+def test_bbox_supports_large_delta_window():
+    west, south, east, north = bbox_from_point(30, 20, 46)
+    assert west < 20 < east
+    assert south < 30 < north
+
+
 def test_parse_scenes_sorts_and_keeps_clearer_overlap():
     features = [
         feature("new-cloudy", "2026-08-10T10:00:30Z", 70),
@@ -38,4 +48,13 @@ def test_parse_scenes_sorts_and_keeps_clearer_overlap():
     scenes = parse_scenes(features)
     assert [scene.id for scene in scenes] == ["old", "new-clear"]
     assert scenes[-1].cloud_cover == 12
+    assert scenes[-1].preview_href.endswith("new-clear-preview.tif")
 
+
+def test_parse_scenes_prefers_tile_covering_selected_area():
+    left = feature("left", "2026-08-10T10:00:10Z", 1)
+    left["bbox"] = [0, 0, 5, 5]
+    right = feature("right", "2026-08-10T10:00:20Z", 90)
+    right["bbox"] = [5, 0, 10, 5]
+    scenes = parse_scenes([left, right], target_bbox=(6, 1, 8, 4))
+    assert [scene.id for scene in scenes] == ["right"]
