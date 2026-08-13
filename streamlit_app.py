@@ -154,12 +154,15 @@ def confirm_delta_area(
         f"East {east:.5f}  |  North {north:.5f}",
         language=None,
     )
-    st.map(
-        pd.DataFrame([{"latitude": latitude, "longitude": longitude}]),
-        latitude="latitude",
-        longitude="longitude",
-        zoom=5,
+    location_picker(
+        latitude,
+        longitude,
+        bbox,
+        key=f"delta-confirm-area-{delta_name}",
+        zoom=6,
         height=230,
+        interactive=False,
+        hint="Exact acquisition box",
     )
     if st.button(
         "Confirm area and acquire images",
@@ -268,19 +271,15 @@ if mode == "Delta movie":
     ]
 
     with context_column:
-        st.map(
-            pd.DataFrame(
-                [
-                    {
-                        "latitude": confirmed_zone["latitude"],
-                        "longitude": confirmed_zone["longitude"],
-                    }
-                ]
-            ),
-            latitude="latitude",
-            longitude="longitude",
-            zoom=2,
+        location_picker(
+            confirmed_zone["latitude"],
+            confirmed_zone["longitude"],
+            bbox,
+            key=f"delta-overview-area-{delta_name}",
+            zoom=5,
             height=160,
+            interactive=False,
+            hint="Selected acquisition area",
         )
         st.caption(
             f"{confirmed_zone['latitude']:.4f}, {confirmed_zone['longitude']:.4f} · "

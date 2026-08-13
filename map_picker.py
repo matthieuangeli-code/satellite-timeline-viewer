@@ -18,7 +18,8 @@ _MAP_CSS = """
 .map-shell {
   position: relative;
   width: 100%;
-  min-height: 460px;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
   border: 1px solid var(--st-border-color, #334247);
   border-radius: var(--st-base-radius, 12px);
@@ -26,7 +27,7 @@ _MAP_CSS = """
 }
 #geo-map {
   width: 100%;
-  height: 460px;
+  height: 100%;
   background: #dce8e5;
 }
 .map-hint {
@@ -77,7 +78,13 @@ export default async function(component) {
   const { data, parentElement, setStateValue, setTriggerValue } = component
   const L = await ensureLeaflet()
   const target = parentElement.querySelector('#geo-map')
+  const hint = parentElement.querySelector('.map-hint')
   if (!target) return
+
+  if (hint) {
+    hint.textContent = data.hint || ''
+    hint.style.display = data.hint ? 'block' : 'none'
+  }
 
   const selection = {
     lat: Number(data.latitude),
@@ -86,7 +93,17 @@ export default async function(component) {
   let state = mapInstances.get(parentElement)
 
   if (!state) {
-    const map = L.map(target, { zoomControl: true, worldCopyJump: true })
+    const interactive = data.interactive !== false
+    const map = L.map(target, {
+      zoomControl: interactive,
+      dragging: interactive,
+      scrollWheelZoom: interactive,
+      doubleClickZoom: interactive,
+      boxZoom: interactive,
+      keyboard: interactive,
+      touchZoom: interactive,
+      worldCopyJump: true,
+    })
       .setView([selection.lat, selection.lng], Number(data.zoom || 5))
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
@@ -109,17 +126,19 @@ export default async function(component) {
     state = { map, marker, rectangle, selection }
     mapInstances.set(parentElement, state)
 
-    map.on('click', event => {
-      const picked = {
-        lat: Number(event.latlng.lat.toFixed(6)),
-        lng: Number(event.latlng.lng.toFixed(6)),
-        zoom: map.getZoom(),
-      }
-      state.selection = picked
-      marker.setLatLng([picked.lat, picked.lng])
-      setStateValue('selection', picked)
-      setTriggerValue('picked', picked)
-    })
+    if (interactive) {
+      map.on('click', event => {
+        const picked = {
+          lat: Number(event.latlng.lat.toFixed(6)),
+          lng: Number(event.latlng.lng.toFixed(6)),
+          zoom: map.getZoom(),
+        }
+        state.selection = picked
+        marker.setLatLng([picked.lat, picked.lng])
+        setStateValue('selection', picked)
+        setTriggerValue('picked', picked)
+      })
+    }
     setTimeout(() => map.invalidateSize(), 0)
   }
 
@@ -149,6 +168,9 @@ def location_picker(
     *,
     key: str,
     zoom: int = 5,
+    height: int = 460,
+    interactive: bool = True,
+    hint: str = "Click the map to move the observation area.",
     on_selection_change: Callable[[], None] | None = None,
 ):
     """Mount the map and return a result containing ``selection`` and ``picked``."""
@@ -162,6 +184,8 @@ def location_picker(
             "longitude": longitude,
             "zoom": zoom,
             "bounds": [[south, west], [north, east]],
+            "interactive": interactive,
+            "hint": hint,
         },
         default={
             "selection": {"lat": latitude, "lng": longitude, "zoom": zoom}
@@ -169,6 +193,5 @@ def location_picker(
         on_selection_change=on_selection_change,
         on_picked_change=lambda: None,
         width="stretch",
-        height=460,
+        height=height,
     )
-
