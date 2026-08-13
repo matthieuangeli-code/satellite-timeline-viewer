@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import math
 
+import pydeck as pdk
 import streamlit as st
 
 
@@ -77,9 +79,14 @@ function changed(a, b) {
 export default async function(component) {
   const { data, parentElement, setStateValue, setTriggerValue } = component
   const L = await ensureLeaflet()
+  const shell = parentElement.querySelector('.map-shell')
   const target = parentElement.querySelector('#geo-map')
   const hint = parentElement.querySelector('.map-hint')
   if (!target) return
+
+  const mapHeight = Math.max(120, Number(data.height || 460))
+  target.style.height = `${mapHeight}px`
+  if (shell) shell.style.height = `${mapHeight}px`
 
   if (hint) {
     hint.textContent = data.hint || ''
@@ -123,7 +130,7 @@ export default async function(component) {
       fillOpacity: 0.12,
     }).addTo(map)
 
-    state = { map, marker, rectangle, selection }
+    state = { map, marker, rectangle, selection, interactive }
     mapInstances.set(parentElement, state)
 
     if (interactive) {
@@ -139,7 +146,12 @@ export default async function(component) {
         setTriggerValue('picked', picked)
       })
     }
-    setTimeout(() => map.invalidateSize(), 0)
+    setTimeout(() => {
+      map.invalidateSize()
+      if (!interactive) {
+        map.fitBounds(data.bounds, { padding: [18, 18], maxZoom: 11, animate: false })
+      }
+    }, 0)
   }
 
   if (changed(state.selection, selection)) {
@@ -148,6 +160,12 @@ export default async function(component) {
     state.map.panTo([selection.lat, selection.lng], { animate: false })
   }
   state.rectangle.setBounds(data.bounds)
+  if (!state.interactive) {
+    setTimeout(() => {
+      state.map.invalidateSize()
+      state.map.fitBounds(data.bounds, { padding: [18, 18], maxZoom: 11, animate: false })
+    }, 0)
+  }
 }
 """
 
@@ -186,6 +204,7 @@ def location_picker(
             "bounds": [[south, west], [north, east]],
             "interactive": interactive,
             "hint": hint,
+            "height": height,
         },
         default={
             "selection": {"lat": latitude, "lng": longitude, "zoom": zoom}
@@ -194,4 +213,64 @@ def location_picker(
         on_picked_change=lambda: None,
         width="stretch",
         height=height,
+    )
+
+
+def area_preview(
+    latitude: float,
+    longitude: float,
+    bounds: tuple[float, float, float, float],
+    *,
+    height: int = 390,
+    key: str | None = None,
+):
+    """Render a reliable native preview of the exact selected acquisition box."""
+    west, south, east, north = bounds
+    polygon = [
+        [west, south],
+        [west, north],
+        [east, north],
+        [east, south],
+    ]
+    span = max(east - west, north - south, 0.0001)
+    zoom = max(2.0, min(13.0, math.log2(360 / span) - 1.6))
+    deck = pdk.Deck(
+        map_style=None,
+        initial_view_state=pdk.ViewState(
+            latitude=latitude,
+            longitude=longitude,
+            zoom=zoom,
+            pitch=0,
+            bearing=0,
+        ),
+        layers=[
+            pdk.Layer(
+                "PolygonLayer",
+                data=[{"polygon": polygon}],
+                get_polygon="polygon",
+                filled=True,
+                stroked=True,
+                get_fill_color=[79, 195, 161, 70],
+                get_line_color=[28, 176, 143, 255],
+                line_width_min_pixels=3,
+            ),
+            pdk.Layer(
+                "ScatterplotLayer",
+                data=[{"position": [longitude, latitude]}],
+                get_position="position",
+                get_fill_color=[28, 176, 143, 255],
+                get_line_color=[255, 255, 255, 255],
+                get_radius=500,
+                radius_min_pixels=5,
+                radius_max_pixels=8,
+                line_width_min_pixels=2,
+                stroked=True,
+            ),
+        ],
+    )
+    return st.pydeck_chart(
+        deck,
+        width="stretch",
+        height=height,
+        key=key,
     )

@@ -17,7 +17,7 @@ from deltas import (
     deltas_by_type,
     type_counts,
 )
-from map_picker import location_picker
+from map_picker import area_preview, location_picker
 from movie_player import encode_frame, satellite_movie
 
 # Streamlit can hot-reload this entrypoint while retaining an older imported
@@ -140,12 +140,14 @@ def confirm_delta_area(
         st.session_state.pending_delta_longitude = float(delta["longitude"])
         st.session_state.pending_delta_width = int(delta["width_km"])
 
-    st.write(
+    st.caption(
         "Adjust the centre and width if needed. Sentinel-2 search and image "
         "downloads start only after you confirm this box."
     )
-    coordinate_columns = st.columns(2)
-    with coordinate_columns[0]:
+    controls_column, map_column = st.columns(
+        [0.9, 1.25], gap="medium", vertical_alignment="top"
+    )
+    with controls_column:
         latitude = st.number_input(
             "Centre latitude",
             min_value=-89.9,
@@ -154,7 +156,6 @@ def confirm_delta_area(
             format="%.4f",
             key="pending_delta_latitude",
         )
-    with coordinate_columns[1]:
         longitude = st.number_input(
             "Centre longitude",
             min_value=-180.0,
@@ -163,37 +164,41 @@ def confirm_delta_area(
             format="%.4f",
             key="pending_delta_longitude",
         )
-    width_km = st.slider(
-        "Square area width",
-        min_value=4,
-        max_value=80,
-        step=2,
-        format="%d km",
-        key="pending_delta_width",
-    )
+        width_km = st.slider(
+            "Square area width",
+            min_value=4,
+            max_value=80,
+            step=2,
+            format="%d km",
+            key="pending_delta_width",
+        )
     bbox = bbox_from_point(latitude, longitude, width_km)
     west, south, east, north = bbox
-    st.code(
-        f"West {west:.5f}  |  South {south:.5f}  |  "
-        f"East {east:.5f}  |  North {north:.5f}",
-        language=None,
-    )
-    location_picker(
-        latitude,
-        longitude,
-        bbox,
-        key=f"delta-confirm-area-{delta_name}",
-        zoom=6,
-        height=230,
-        interactive=False,
-        hint="Exact acquisition box",
-    )
-    if st.button(
-        "Confirm area and acquire images",
-        type="primary",
-        icon=":material/satellite_alt:",
-        width="stretch",
-    ):
+    with controls_column:
+        st.code(
+            f"W {west:.4f}\nS {south:.4f}\nE {east:.4f}\nN {north:.4f}",
+            language=None,
+        )
+        confirm_clicked = st.button(
+            "Confirm area and acquire images",
+            type="primary",
+            icon=":material/satellite_alt:",
+            width="stretch",
+        )
+    with map_column:
+        st.subheader("Selected area", anchor=False)
+        area_preview(
+            latitude,
+            longitude,
+            bbox,
+            height=390,
+            key=f"delta-confirm-preview-{delta_name}",
+        )
+        st.caption(
+            f"Green square: exact {width_km} × {width_km} km acquisition box."
+        )
+
+    if confirm_clicked:
         zone = {
             "delta": delta_name,
             "latitude": float(latitude),
