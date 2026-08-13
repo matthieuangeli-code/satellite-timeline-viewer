@@ -5,6 +5,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import timedelta
 import hashlib
+import importlib
 
 import pandas as pd
 import streamlit as st
@@ -12,12 +13,20 @@ import streamlit as st
 from deltas import DELTAS
 from map_picker import location_picker
 from movie_player import encode_frame, satellite_movie
+
+# Streamlit can hot-reload this entrypoint while retaining an older imported
+# module. Reload it only when the newly added movie helper is absent, preventing
+# the stale-module ImportError without reloading during normal reruns.
+import satellite as satellite_api
+
+if not hasattr(satellite_api, "load_scene_preview_png"):
+    satellite_api = importlib.reload(satellite_api)
+
 from satellite import (
     SatelliteError,
     Scene,
     bbox_from_point,
     load_scene_png,
-    load_scene_preview_png,
     search_scenes,
     utc_today,
 )
@@ -51,7 +60,9 @@ def cached_movie(scene_data, bbox, output_size=720):
 
     def fetch(index, item):
         scene = Scene.from_dict(item)
-        image = load_scene_preview_png(scene, tuple(bbox), output_size)
+        image = satellite_api.load_scene_preview_png(
+            scene, tuple(bbox), output_size
+        )
         return index, encode_frame(
             image,
             scene.datetime.strftime("%d %b %Y · %H:%M UTC"),
@@ -111,8 +122,12 @@ mode = st.segmented_control(
 )
 
 if mode == "Delta movie":
-    with st.sidebar:
-        st.header("Build a delta movie", anchor=False)
+    player_column, context_column = st.columns(
+        [3.25, 1.15], gap="medium", vertical_alignment="top"
+    )
+
+    with context_column.container(border=True):
+        st.subheader("Delta and period", anchor=False)
         delta_name = st.selectbox("River delta", options=list(DELTAS))
         history = st.selectbox(
             "Time span",
@@ -142,37 +157,43 @@ if mode == "Delta movie":
     )
     request_signature = [delta_name, history, cloud_limit]
 
-    st.subheader(delta_name, anchor=False)
-    st.write(delta["description"])
-    with st.container(horizontal=True):
-        st.metric("Latitude", f"{delta['latitude']:.3f}", border=True)
-        st.metric("Longitude", f"{delta['longitude']:.3f}", border=True)
-        st.metric("Observation window", f"{delta['width_km']} × {delta['width_km']} km", border=True)
-        st.metric("Selected history", period_label(history), border=True)
+    with context_column:
+        st.caption(delta["description"])
+        st.map(
+            pd.DataFrame(
+                [{"latitude": delta["latitude"], "longitude": delta["longitude"]}]
+            ),
+            latitude="latitude",
+            longitude="longitude",
+            zoom=2,
+            height=205,
+        )
+        st.caption(
+            f"{delta['latitude']:.3f}, {delta['longitude']:.3f} · "
+            f"window {delta['width_km']} × {delta['width_km']} km"
+        )
 
-    st.map(
-        pd.DataFrame(
-            [{"latitude": delta["latitude"], "longitude": delta["longitude"]}]
-        ),
-        latitude="latitude",
-        longitude="longitude",
-        zoom=7,
-        height=260,
-    )
+    with player_column:
+        st.subheader(delta_name, anchor=False)
+        player_status = st.container()
+        movie_slot = st.container()
 
-    movie_slot = st.container()
     if build_clicked:
         end_date = utc_today()
         start_date = end_date - timedelta(days=history)
         try:
-            with st.status("Building the Sentinel-2 movie…", expanded=True) as status:
-                st.write("Searching the public catalogue…")
+            with player_status.status(
+                "Building the Sentinel-2 movie…", expanded=True
+            ) as status:
+                status.write("Searching the public catalogue…")
                 scene_data = cached_search(bbox, start_date, end_date, cloud_limit)
                 if not scene_data:
                     raise SatelliteError(
                         "No Sentinel-2 acquisitions match this period and cloud threshold."
                     )
-                st.write(f"Reading {len(scene_data)} real satellite acquisitions…")
+                status.write(
+                    f"Reading {len(scene_data)} real satellite acquisitions…"
+                )
                 frames, failures = cached_movie(scene_data, bbox)
                 if not frames:
                     raise SatelliteError("None of the matching images could be read.")
@@ -204,10 +225,9 @@ if mode == "Delta movie":
         movie_id = hashlib.sha256(
             "|".join(map(str, movie_meta["request"])).encode()
         ).hexdigest()[:12]
-        movie_slot.subheader("Time-lapse player", anchor=False)
         movie_slot.caption(
             f"{len(frames)} frames · {movie_meta['start']} → {movie_meta['end']} · "
-            "pause, scrub the timeline or change speed at any time"
+            "all playback controls stay below the image"
         )
         with movie_slot:
             satellite_movie(
@@ -230,8 +250,8 @@ if mode == "Delta movie":
         with movie_slot.container(border=True):
             st.subheader("Ready to animate", anchor=False)
             st.write(
-                "Choose a delta and click **Create satellite movie**. The first build can take "
-                "a minute because every selected acquisition is cropped from the public archive."
+                "Choose a delta in the panel on the right, then click **Create satellite "
+                "movie**. The video and all its controls will appear here."
             )
     st.stop()
 

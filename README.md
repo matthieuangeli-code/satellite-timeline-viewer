@@ -19,6 +19,8 @@ The player includes every successfully readable acquisition matching the chosen 
 - optional looping;
 - the real date, UTC time and catalogue cloud value on every frame.
 
+The Delta view is designed as a single-screen workspace: the full movie and playback controls remain together on the left, while a compact world map and build settings stay visible on the right.
+
 The movie uses the small georeferenced Sentinel-2 preview for fast loading. It is intended to reveal large changes in water, sediment, vegetation, ice and coastline—not fine details. Frames are observations, not interpolated animation.
 
 ## Anywhere on Earth

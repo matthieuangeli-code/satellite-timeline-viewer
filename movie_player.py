@@ -44,7 +44,7 @@ _PLAYER_CSS = """
 .stage {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   border: 1px solid var(--st-border-color);
   border-radius: var(--st-base-radius, 12px);
@@ -87,10 +87,10 @@ _PLAYER_CSS = """
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  margin-top: 12px;
+  margin-top: 9px;
 }
 button, select {
-  min-height: 38px;
+  min-height: 34px;
   border: 1px solid var(--st-widget-border-color, var(--st-border-color));
   border-radius: var(--st-button-radius, 8px);
   background: var(--st-secondary-background-color);
@@ -111,7 +111,7 @@ select { padding: 0 10px; }
 .loop-label { display: flex; align-items: center; gap: 5px; font-size: 13px; }
 .scrubber {
   width: 100%;
-  margin: 14px 0 0;
+  margin: 9px 0 0;
   accent-color: var(--st-primary-color);
 }
 .range-labels {
@@ -238,6 +238,5 @@ def satellite_movie(frames: list[dict], *, movie_id: str, key: str):
         key=key,
         data={"frames": frames, "movie_id": movie_id},
         width="stretch",
-        height=760,
+        height=610,
     )
-
