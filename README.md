@@ -23,6 +23,8 @@ The Delta view is designed as a single-screen workspace: the full movie and play
 
 Before any catalogue search or image download, the app asks for explicit confirmation of the exact centre, width and WGS84 bounding box. Blank, black or partially uncovered crops are rejected automatically and never enter the movie.
 
+Available time spans are 6 months, 1 year, 2 years, 5 years, 10 years, or the complete Sentinel-2 Collection 1 L2A archive from 27 June 2015 to today. Catalogue pagination is followed automatically, so long searches are not silently truncated at 200 acquisitions.
+
 The three labels are simplified dominant-process categories for visual exploration, following the river–wave–tide framework. Real deltas occupy a continuum and their dominant forcing can vary through time and across the delta. See [Broaddus et al. (2022)](https://doi.org/10.1029/2022GL100355) and [Vulis et al. (2023)](https://doi.org/10.1029/2022GL102684) for quantitative treatments of this framework.
 
 The movie uses the small georeferenced Sentinel-2 preview for fast loading. It is intended to reveal large changes in water, sediment, vegetation, ice and coastline—not fine details. Frames are observations, not interpolated animation.

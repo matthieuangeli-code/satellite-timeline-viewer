@@ -20,7 +20,8 @@ import requests
 
 EARTH_SEARCH_URL = "https://earth-search.aws.element84.com/v1/search"
 COLLECTION = "sentinel-2-c1-l2a"
-SATELLITE_API_VERSION = 2
+SATELLITE_API_VERSION = 3
+SENTINEL2_ARCHIVE_START = date(2015, 6, 27)
 
 
 class SatelliteError(RuntimeError):
@@ -139,12 +140,39 @@ def search_scenes(
         "limit": 200,
         "query": {"eo:cloud_cover": {"lte": cloud_limit}},
     }
+    features: list[dict[str, Any]] = []
+    request_url = EARTH_SEARCH_URL
+    request_method = "POST"
+    request_body: dict[str, Any] | None = payload
     try:
-        response = requests.post(EARTH_SEARCH_URL, json=payload, timeout=45)
-        response.raise_for_status()
+        for _page in range(50):
+            if request_method == "POST":
+                response = requests.post(
+                    request_url, json=request_body, timeout=45
+                )
+            else:
+                response = requests.get(request_url, timeout=45)
+            response.raise_for_status()
+            page = response.json()
+            features.extend(page.get("features", []))
+
+            next_link = next(
+                (link for link in page.get("links", []) if link.get("rel") == "next"),
+                None,
+            )
+            if not next_link:
+                break
+            request_url = next_link["href"]
+            request_method = next_link.get("method", "GET").upper()
+            request_body = next_link.get("body")
+        else:
+            raise SatelliteError(
+                "The catalogue returned too many pages for one request. "
+                "Reduce the period or cloud threshold."
+            )
     except requests.RequestException as exc:
         raise SatelliteError(f"Catalogue Sentinel-2 indisponible : {exc}") from exc
-    scenes = parse_scenes(response.json().get("features", []), bbox)
+    scenes = parse_scenes(features, bbox)
     return [scene for scene in scenes if scene.cloud_cover <= cloud_limit]
 
 

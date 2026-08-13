@@ -19,10 +19,11 @@ from movie_player import encode_frame, satellite_movie
 # satellite module during normal widget reruns.
 import satellite as satellite_api
 
-if getattr(satellite_api, "SATELLITE_API_VERSION", 0) < 2:
+if getattr(satellite_api, "SATELLITE_API_VERSION", 0) < 3:
     satellite_api = importlib.reload(satellite_api)
 
 from satellite import (
+    SENTINEL2_ARCHIVE_START,
     SatelliteError,
     Scene,
     bbox_from_point,
@@ -88,12 +89,24 @@ def cached_movie(scene_data, bbox, output_size=720, validation_version=2):
     return [completed[index] for index in sorted(completed)], failures
 
 
-def period_label(days: int) -> str:
+PERIOD_OPTIONS = [180, 365, 730, 1825, 3650, "archive"]
+
+
+def period_label(period: int | str) -> str:
     return {
         180: "6 months",
         365: "1 year",
         730: "2 years",
-    }[days]
+        1825: "5 years",
+        3650: "10 years",
+        "archive": "Full archive · since June 2015",
+    }[period]
+
+
+def period_start(period: int | str, end_date):
+    if period == "archive":
+        return SENTINEL2_ARCHIVE_START
+    return max(SENTINEL2_ARCHIVE_START, end_date - timedelta(days=period))
 
 
 def reset_free_explorer() -> None:
@@ -105,7 +118,7 @@ def reset_free_explorer() -> None:
 @st.dialog("Confirm the exact acquisition area", width="large")
 def confirm_delta_area(
     delta_name: str,
-    history: int,
+    history: int | str,
     cloud_limit: int,
 ) -> None:
     """Require an explicit area confirmation before any imagery is fetched."""
@@ -227,10 +240,11 @@ if mode == "Delta movie":
         )
         history = st.selectbox(
             "Time span",
-            options=[180, 365, 730],
+            options=PERIOD_OPTIONS,
             index=1,
             format_func=period_label,
         )
+        st.caption("Sentinel-2 archive available from 27 June 2015 to today.")
         cloud_limit = st.slider(
             "Maximum catalogue cloud",
             5,
@@ -316,7 +330,7 @@ if mode == "Delta movie":
             confirmed_zone["width_km"],
         ]
         end_date = utc_today()
-        start_date = end_date - timedelta(days=history)
+        start_date = period_start(history, end_date)
         try:
             with player_status.status(
                 "Building the Sentinel-2 movie…", expanded=True
@@ -415,7 +429,7 @@ with st.sidebar:
     )
     history = st.selectbox(
         "History to load",
-        options=[180, 365, 730],
+        options=PERIOD_OPTIONS,
         index=1,
         format_func=period_label,
     )
@@ -474,7 +488,7 @@ with st.container(horizontal=True):
 result_slot = st.container()
 if load_clicked:
     end_date = utc_today()
-    start_date = end_date - timedelta(days=history)
+    start_date = period_start(history, end_date)
     try:
         with st.status("Searching Sentinel-2 acquisitions…", expanded=True) as status:
             scene_data = cached_search(bbox, start_date, end_date, cloud_limit)

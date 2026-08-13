@@ -4,7 +4,14 @@ import numpy as np
 
 import pytest
 
-from satellite import SatelliteError, _validated_rgb, bbox_from_point, parse_scenes
+from satellite import (
+    SENTINEL2_ARCHIVE_START,
+    SatelliteError,
+    _validated_rgb,
+    bbox_from_point,
+    parse_scenes,
+    search_scenes,
+)
 
 
 def feature(identifier, acquired, cloud, visual=True):
@@ -80,3 +87,51 @@ def test_complete_non_black_frame_is_accepted():
     rgb = _validated_rgb(data)
     assert rgb.shape == (40, 40, 3)
     assert rgb.dtype == np.uint8
+
+
+def test_archive_starts_with_first_catalogued_sentinel_2_image():
+    assert SENTINEL2_ARCHIVE_START == date(2015, 6, 27)
+
+
+def test_search_follows_all_catalogue_pages(monkeypatch):
+    pages = [
+        {
+            "features": [feature("first", "2020-01-01T10:00:00Z", 2)],
+            "links": [
+                {
+                    "rel": "next",
+                    "href": "https://example.test/search",
+                    "method": "POST",
+                    "body": {"token": "page-2"},
+                }
+            ],
+        },
+        {
+            "features": [feature("second", "2020-01-06T10:00:00Z", 3)],
+            "links": [],
+        },
+    ]
+    calls = []
+
+    class Response:
+        def __init__(self, page):
+            self.page = page
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return self.page
+
+    def fake_post(url, json, timeout):
+        calls.append((url, json, timeout))
+        return Response(pages.pop(0))
+
+    monkeypatch.setattr("satellite.requests.post", fake_post)
+    scenes = search_scenes(
+        (1.0, 2.0, 3.0, 4.0), date(2019, 1, 1), date(2021, 1, 1), 20
+    )
+
+    assert [scene.id for scene in scenes] == ["first", "second"]
+    assert len(calls) == 2
+    assert calls[1][1] == {"token": "page-2"}
