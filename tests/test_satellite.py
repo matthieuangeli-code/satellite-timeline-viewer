@@ -69,6 +69,25 @@ def test_parse_scenes_prefers_tile_covering_selected_area():
     assert [scene.id for scene in scenes] == ["right"]
 
 
+def test_parse_scenes_keeps_adjacent_tiles_for_a_cross_boundary_mosaic():
+    left = feature("left", "2026-08-10T10:00:10Z", 1)
+    left["bbox"] = [0, 0, 5, 5]
+    right = feature("right", "2026-08-10T10:00:20Z", 2)
+    right["bbox"] = [5, 0, 10, 5]
+
+    scenes = parse_scenes([left, right], target_bbox=(4, 1, 6, 4))
+
+    assert len(scenes) == 1
+    assert scenes[0].visual_hrefs == (
+        "https://example.test/left.tif",
+        "https://example.test/right.tif",
+    )
+    assert scenes[0].preview_hrefs == (
+        "https://example.test/left-preview.tif",
+        "https://example.test/right-preview.tif",
+    )
+
+
 def test_black_frame_is_rejected():
     with pytest.raises(SatelliteError, match="Black"):
         _validated_rgb(np.zeros((3, 40, 40), dtype=np.uint8))

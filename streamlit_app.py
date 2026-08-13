@@ -10,7 +10,13 @@ import importlib
 import pandas as pd
 import streamlit as st
 
-from deltas import DELTAS, DELTA_TYPES, deltas_by_type, type_counts
+from deltas import (
+    DELTAS,
+    DELTA_CATALOG_VERSION,
+    DELTA_TYPES,
+    deltas_by_type,
+    type_counts,
+)
 from map_picker import location_picker
 from movie_player import encode_frame, satellite_movie
 
@@ -19,7 +25,7 @@ from movie_player import encode_frame, satellite_movie
 # satellite module during normal widget reruns.
 import satellite as satellite_api
 
-if getattr(satellite_api, "SATELLITE_API_VERSION", 0) < 3:
+if getattr(satellite_api, "SATELLITE_API_VERSION", 0) < 4:
     satellite_api = importlib.reload(satellite_api)
 
 from satellite import (
@@ -54,9 +60,9 @@ def cached_image(scene_data, bbox, output_size=900):
 
 
 @st.cache_data(max_entries=8, show_spinner=False)
-def cached_movie(scene_data, bbox, output_size=720, validation_version=2):
+def cached_movie(scene_data, bbox, output_size=720, validation_version=4):
     """Read the movie frames concurrently and retain their chronological order."""
-    if validation_version != 2:
+    if validation_version != 4:
         raise ValueError("Unsupported frame validation version.")
     completed: dict[int, dict] = {}
     failures: list[str] = []
@@ -123,8 +129,13 @@ def confirm_delta_area(
 ) -> None:
     """Require an explicit area confirmation before any imagery is fetched."""
     delta = DELTAS[delta_name]
-    if st.session_state.get("pending_delta_name") != delta_name:
+    if (
+        st.session_state.get("pending_delta_name") != delta_name
+        or st.session_state.get("pending_delta_catalog_version")
+        != DELTA_CATALOG_VERSION
+    ):
         st.session_state.pending_delta_name = delta_name
+        st.session_state.pending_delta_catalog_version = DELTA_CATALOG_VERSION
         st.session_state.pending_delta_latitude = float(delta["latitude"])
         st.session_state.pending_delta_longitude = float(delta["longitude"])
         st.session_state.pending_delta_width = int(delta["width_km"])
@@ -188,6 +199,7 @@ def confirm_delta_area(
             "latitude": float(latitude),
             "longitude": float(longitude),
             "width_km": int(width_km),
+            "catalog_version": DELTA_CATALOG_VERSION,
         }
         st.session_state.confirmed_delta_zone = zone
         st.session_state.delta_acquisition_request = {
@@ -263,12 +275,17 @@ if mode == "Delta movie":
 
     delta = DELTAS[delta_name]
     confirmed_zone = st.session_state.confirmed_delta_zone
-    if not confirmed_zone or confirmed_zone["delta"] != delta_name:
+    if (
+        not confirmed_zone
+        or confirmed_zone["delta"] != delta_name
+        or confirmed_zone.get("catalog_version") != DELTA_CATALOG_VERSION
+    ):
         confirmed_zone = {
             "delta": delta_name,
             "latitude": float(delta["latitude"]),
             "longitude": float(delta["longitude"]),
             "width_km": int(delta["width_km"]),
+            "catalog_version": DELTA_CATALOG_VERSION,
         }
     bbox = bbox_from_point(
         confirmed_zone["latitude"],
@@ -331,10 +348,12 @@ if mode == "Delta movie":
         ]
         end_date = utc_today()
         start_date = period_start(history, end_date)
+        build_status = None
         try:
             with player_status.status(
                 "Building the Sentinel-2 movie…", expanded=True
             ) as status:
+                build_status = status
                 status.write("Searching the public catalogue…")
                 scene_data = cached_search(bbox, start_date, end_date, cloud_limit)
                 if not scene_data:
@@ -346,6 +365,16 @@ if mode == "Delta movie":
                 )
                 frames, failures = cached_movie(scene_data, bbox)
                 if not frames:
+                    incomplete_count = sum(
+                        "black or incomplete" in failure.lower()
+                        for failure in failures
+                    )
+                    if incomplete_count == len(failures):
+                        raise SatelliteError(
+                            "The selected square crosses the usable edge of a Sentinel-2 "
+                            "tile. Define the area again, then shift its centre or reduce "
+                            "its width. No incomplete image was added to the movie."
+                        )
                     raise SatelliteError("None of the matching images could be read.")
                 st.session_state.movie_frames = frames
                 st.session_state.movie_meta = {
@@ -363,6 +392,12 @@ if mode == "Delta movie":
                     expanded=False,
                 )
         except SatelliteError as exc:
+            if build_status is not None:
+                build_status.update(
+                    label="Movie could not be built",
+                    state="error",
+                    expanded=False,
+                )
             movie_slot.error(str(exc), icon=":material/error:")
 
     movie_meta = st.session_state.movie_meta

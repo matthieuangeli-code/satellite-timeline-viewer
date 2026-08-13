@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import date, datetime, timezone
 from io import BytesIO
 import math
@@ -13,14 +13,14 @@ from PIL import Image
 import rasterio
 from rasterio.enums import Resampling
 from rasterio.io import MemoryFile
-from rasterio.windows import from_bounds
-from rasterio.warp import transform_bounds
+from rasterio.transform import from_bounds as transform_from_bounds
+from rasterio.warp import reproject
 import requests
 
 
 EARTH_SEARCH_URL = "https://earth-search.aws.element84.com/v1/search"
 COLLECTION = "sentinel-2-c1-l2a"
-SATELLITE_API_VERSION = 3
+SATELLITE_API_VERSION = 4
 SENTINEL2_ARCHIVE_START = date(2015, 6, 27)
 
 
@@ -37,6 +37,8 @@ class Scene:
     thumbnail_href: str | None = None
     preview_href: str | None = None
     bounds: tuple[float, float, float, float] | None = None
+    visual_hrefs: tuple[str, ...] = ()
+    preview_hrefs: tuple[str, ...] = ()
 
     @property
     def datetime(self) -> datetime:
@@ -47,7 +49,10 @@ class Scene:
 
     @classmethod
     def from_dict(cls, value: dict[str, Any]) -> "Scene":
-        return cls(**value)
+        normalized = dict(value)
+        normalized["visual_hrefs"] = tuple(normalized.get("visual_hrefs", ()))
+        normalized["preview_hrefs"] = tuple(normalized.get("preview_hrefs", ()))
+        return cls(**normalized)
 
 
 def bbox_from_point(
@@ -83,6 +88,12 @@ def _scene_from_feature(feature: dict[str, Any]) -> Scene | None:
         thumbnail_href=assets.get("thumbnail", {}).get("href"),
         preview_href=assets.get("preview", {}).get("href"),
         bounds=(tuple(feature["bbox"]) if feature.get("bbox") else None),
+        visual_hrefs=(visual,),
+        preview_hrefs=(
+            (assets["preview"]["href"],)
+            if assets.get("preview", {}).get("href")
+            else ()
+        ),
     )
 
 
@@ -106,22 +117,45 @@ def parse_scenes(
     """Parse, sort and de-duplicate overlapping tiles from a STAC response."""
     parsed = [scene for feature in features if (scene := _scene_from_feature(feature))]
     parsed.sort(key=lambda scene: (scene.datetime, -scene.cloud_cover))
-    unique: dict[str, Scene] = {}
+    grouped: dict[str, list[Scene]] = {}
     for scene in parsed:
         key = scene.datetime.replace(second=0, microsecond=0).isoformat()
-        current = unique.get(key)
-        scene_coverage = _intersection_area(scene.bounds, target_bbox)
-        current_coverage = _intersection_area(current.bounds, target_bbox) if current else -1
-        if (
-            current is None
-            or scene_coverage > current_coverage
-            or (
-                scene_coverage == current_coverage
-                and scene.cloud_cover < current.cloud_cover
+        grouped.setdefault(key, []).append(scene)
+
+    mosaics: list[Scene] = []
+    for candidates in grouped.values():
+        ordered = sorted(
+            candidates,
+            key=lambda scene: (
+                -_intersection_area(scene.bounds, target_bbox),
+                scene.cloud_cover,
+            ),
+        )
+        chosen = ordered[0]
+        intersecting = [
+            scene
+            for scene in ordered
+            if target_bbox is None
+            or _intersection_area(scene.bounds, target_bbox) > 0
+        ] or [chosen]
+        visual_hrefs = tuple(
+            dict.fromkeys(scene.visual_href for scene in intersecting)
+        )
+        preview_hrefs = tuple(
+            dict.fromkeys(
+                scene.preview_href
+                for scene in intersecting
+                if scene.preview_href is not None
             )
-        ):
-            unique[key] = scene
-    return sorted(unique.values(), key=lambda scene: scene.datetime)
+        )
+        mosaics.append(
+            replace(
+                chosen,
+                visual_hrefs=visual_hrefs,
+                preview_hrefs=preview_hrefs,
+            )
+        )
+    return sorted(mosaics, key=lambda scene: scene.datetime)
 
 
 def search_scenes(
@@ -218,37 +252,71 @@ def _validated_rgb(data: np.ndarray) -> np.ndarray:
     return rgb
 
 
+def _add_source_to_mosaic(
+    source,
+    mosaic: np.ndarray,
+    bbox: tuple[float, float, float, float],
+) -> None:
+    """Reproject one Sentinel tile and fill only gaps in the shared mosaic."""
+    output_size = mosaic.shape[1]
+    destination_transform = transform_from_bounds(
+        *bbox, width=output_size, height=output_size
+    )
+    tile = np.zeros_like(mosaic)
+    for band_index in range(3):
+        reproject(
+            source=rasterio.band(source, band_index + 1),
+            destination=tile[band_index],
+            src_transform=source.transform,
+            src_crs=source.crs,
+            dst_transform=destination_transform,
+            dst_crs="EPSG:4326",
+            src_nodata=source.nodata,
+            dst_nodata=0,
+            resampling=Resampling.bilinear,
+        )
+    tile_coverage = np.any(np.abs(tile) > 1e-6, axis=0)
+    mosaic_empty = ~np.any(np.abs(mosaic) > 1e-6, axis=0)
+    fill = tile_coverage & mosaic_empty
+    mosaic[:, fill] = tile[:, fill]
+
+
+def _scene_visual_hrefs(scene: Scene) -> tuple[str, ...]:
+    return scene.visual_hrefs or (scene.visual_href,)
+
+
+def _scene_preview_hrefs(scene: Scene) -> tuple[str, ...]:
+    if scene.preview_hrefs:
+        return scene.preview_hrefs
+    return (scene.preview_href,) if scene.preview_href else ()
+
+
 def load_scene_png(
     scene: Scene,
     bbox: tuple[float, float, float, float],
     output_size: int = 900,
 ) -> bytes:
-    """Read only the selected AOI from the public true-colour COG."""
-    try:
-        with rasterio.Env(
-            GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
-            CPL_VSIL_CURL_ALLOWED_EXTENSIONS="TIF,tif",
-            GDAL_HTTP_MULTIRANGE="YES",
-            GDAL_HTTP_CONNECTTIMEOUT="10",
-            GDAL_HTTP_TIMEOUT="45",
-        ):
-            with rasterio.open(scene.visual_href) as source:
-                projected = transform_bounds(
-                    "EPSG:4326", source.crs, *bbox, densify_pts=21
-                )
-                window = from_bounds(*projected, transform=source.transform)
-                data = source.read(
-                    indexes=(1, 2, 3),
-                    window=window,
-                    out_shape=(3, output_size, output_size),
-                    resampling=Resampling.bilinear,
-                    boundless=True,
-                    fill_value=0,
-                )
-    except (OSError, rasterio.errors.RasterioError) as exc:
-        raise SatelliteError(f"Image Sentinel-2 illisible : {exc}") from exc
+    """Mosaic every intersecting true-colour COG over the exact selected AOI."""
+    mosaic = np.zeros((3, output_size, output_size), dtype=np.float32)
+    failures: list[str] = []
+    with rasterio.Env(
+        GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
+        CPL_VSIL_CURL_ALLOWED_EXTENSIONS="TIF,tif",
+        GDAL_HTTP_MULTIRANGE="YES",
+        GDAL_HTTP_CONNECTTIMEOUT="10",
+        GDAL_HTTP_TIMEOUT="45",
+    ):
+        for href in _scene_visual_hrefs(scene):
+            try:
+                with rasterio.open(href) as source:
+                    _add_source_to_mosaic(source, mosaic, bbox)
+            except (OSError, rasterio.errors.RasterioError) as exc:
+                failures.append(str(exc))
+    if not np.any(mosaic):
+        detail = failures[0] if failures else "no readable intersecting tile"
+        raise SatelliteError(f"Image Sentinel-2 illisible : {detail}")
 
-    rgb = _validated_rgb(data)
+    rgb = _validated_rgb(mosaic)
     output = BytesIO()
     Image.fromarray(rgb, mode="RGB").save(output, format="JPEG", quality=91)
     return output.getvalue()
@@ -259,30 +327,30 @@ def load_scene_preview_png(
     bbox: tuple[float, float, float, float],
     output_size: int = 720,
 ) -> bytes:
-    """Download the small georeferenced preview and crop it for fast movies."""
-    if not scene.preview_href:
+    """Mosaic georeferenced previews from every tile crossing the selected AOI."""
+    preview_hrefs = _scene_preview_hrefs(scene)
+    if not preview_hrefs:
         return load_scene_png(scene, bbox, output_size)
-    try:
-        response = requests.get(scene.preview_href, timeout=(10, 30))
-        response.raise_for_status()
-        with MemoryFile(response.content) as memory_file:
-            with memory_file.open() as source:
-                projected = transform_bounds(
-                    "EPSG:4326", source.crs, *bbox, densify_pts=21
-                )
-                window = from_bounds(*projected, transform=source.transform)
-                data = source.read(
-                    indexes=(1, 2, 3),
-                    window=window,
-                    out_shape=(3, output_size, output_size),
-                    resampling=Resampling.bilinear,
-                    boundless=True,
-                    fill_value=0,
-                )
-    except (requests.RequestException, OSError, rasterio.errors.RasterioError) as exc:
-        raise SatelliteError(f"Aperçu Sentinel-2 illisible : {exc}") from exc
+    mosaic = np.zeros((3, output_size, output_size), dtype=np.float32)
+    failures: list[str] = []
+    for href in preview_hrefs:
+        try:
+            response = requests.get(href, timeout=(10, 30))
+            response.raise_for_status()
+            with MemoryFile(response.content) as memory_file:
+                with memory_file.open() as source:
+                    _add_source_to_mosaic(source, mosaic, bbox)
+        except (
+            requests.RequestException,
+            OSError,
+            rasterio.errors.RasterioError,
+        ) as exc:
+            failures.append(str(exc))
+    if not np.any(mosaic):
+        detail = failures[0] if failures else "no readable intersecting tile"
+        raise SatelliteError(f"Aperçu Sentinel-2 illisible : {detail}")
 
-    rgb = _validated_rgb(data)
+    rgb = _validated_rgb(mosaic)
     output = BytesIO()
     Image.fromarray(rgb, mode="RGB").save(output, format="JPEG", quality=88)
     return output.getvalue()

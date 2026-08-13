@@ -9,6 +9,7 @@ RIVER_DOMINATED = "River-dominated"
 WAVE_DOMINATED = "Wave-dominated"
 TIDE_DOMINATED = "Tide-dominated"
 DELTA_TYPES = (RIVER_DOMINATED, WAVE_DOMINATED, TIDE_DOMINATED)
+DELTA_CATALOG_VERSION = 2
 
 
 DELTAS = {
@@ -173,10 +174,10 @@ DELTAS = {
     },
     "Orinoco · Venezuela": {
         "latitude": 8.660,
-        "longitude": -61.100,
-        "width_km": 52,
+        "longitude": -61.450,
+        "width_km": 42,
         "type": TIDE_DOMINATED,
-        "description": "A maze of estuarine channels, mudbanks and mangroves.",
+        "description": "Western delta channels, mudbanks and mangroves inside a stable Sentinel-2 tile.",
     },
     "Fly · Papua New Guinea": {
         "latitude": -8.540,
