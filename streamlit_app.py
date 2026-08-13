@@ -10,16 +10,16 @@ import importlib
 import pandas as pd
 import streamlit as st
 
-from deltas import DELTAS
+from deltas import DELTAS, DELTA_TYPES, deltas_by_type, type_counts
 from map_picker import location_picker
 from movie_player import encode_frame, satellite_movie
 
 # Streamlit can hot-reload this entrypoint while retaining an older imported
-# module. Reload it only when the newly added movie helper is absent, preventing
-# the stale-module ImportError without reloading during normal reruns.
+# module. The version gate picks up new image validation without reloading the
+# satellite module during normal widget reruns.
 import satellite as satellite_api
 
-if not hasattr(satellite_api, "load_scene_preview_png"):
+if getattr(satellite_api, "SATELLITE_API_VERSION", 0) < 2:
     satellite_api = importlib.reload(satellite_api)
 
 from satellite import (
@@ -53,8 +53,10 @@ def cached_image(scene_data, bbox, output_size=900):
 
 
 @st.cache_data(max_entries=8, show_spinner=False)
-def cached_movie(scene_data, bbox, output_size=720):
+def cached_movie(scene_data, bbox, output_size=720, validation_version=2):
     """Read the movie frames concurrently and retain their chronological order."""
+    if validation_version != 2:
+        raise ValueError("Unsupported frame validation version.")
     completed: dict[int, dict] = {}
     failures: list[str] = []
 
@@ -100,6 +102,86 @@ def reset_free_explorer() -> None:
     st.session_state.pop("timeline_index", None)
 
 
+@st.dialog("Confirm the exact acquisition area", width="large")
+def confirm_delta_area(
+    delta_name: str,
+    history: int,
+    cloud_limit: int,
+) -> None:
+    """Require an explicit area confirmation before any imagery is fetched."""
+    delta = DELTAS[delta_name]
+    if st.session_state.get("pending_delta_name") != delta_name:
+        st.session_state.pending_delta_name = delta_name
+        st.session_state.pending_delta_latitude = float(delta["latitude"])
+        st.session_state.pending_delta_longitude = float(delta["longitude"])
+        st.session_state.pending_delta_width = int(delta["width_km"])
+
+    st.write(
+        "Adjust the centre and width if needed. Sentinel-2 search and image "
+        "downloads start only after you confirm this box."
+    )
+    coordinate_columns = st.columns(2)
+    with coordinate_columns[0]:
+        latitude = st.number_input(
+            "Centre latitude",
+            min_value=-89.9,
+            max_value=89.9,
+            step=0.001,
+            format="%.4f",
+            key="pending_delta_latitude",
+        )
+    with coordinate_columns[1]:
+        longitude = st.number_input(
+            "Centre longitude",
+            min_value=-180.0,
+            max_value=180.0,
+            step=0.001,
+            format="%.4f",
+            key="pending_delta_longitude",
+        )
+    width_km = st.slider(
+        "Square area width",
+        min_value=4,
+        max_value=80,
+        step=2,
+        format="%d km",
+        key="pending_delta_width",
+    )
+    bbox = bbox_from_point(latitude, longitude, width_km)
+    west, south, east, north = bbox
+    st.code(
+        f"West {west:.5f}  |  South {south:.5f}  |  "
+        f"East {east:.5f}  |  North {north:.5f}",
+        language=None,
+    )
+    st.map(
+        pd.DataFrame([{"latitude": latitude, "longitude": longitude}]),
+        latitude="latitude",
+        longitude="longitude",
+        zoom=5,
+        height=230,
+    )
+    if st.button(
+        "Confirm area and acquire images",
+        type="primary",
+        icon=":material/satellite_alt:",
+        width="stretch",
+    ):
+        zone = {
+            "delta": delta_name,
+            "latitude": float(latitude),
+            "longitude": float(longitude),
+            "width_km": int(width_km),
+        }
+        st.session_state.confirmed_delta_zone = zone
+        st.session_state.delta_acquisition_request = {
+            **zone,
+            "history": history,
+            "cloud_limit": cloud_limit,
+        }
+        st.rerun()
+
+
 st.session_state.setdefault("location", {"lat": 48.8566, "lng": 2.3522, "zoom": 7})
 st.session_state.setdefault("free_scenes", [])
 st.session_state.setdefault("free_search_bbox", None)
@@ -107,6 +189,8 @@ st.session_state.setdefault("free_search_label", None)
 st.session_state.setdefault("free_search_options", None)
 st.session_state.setdefault("movie_frames", [])
 st.session_state.setdefault("movie_meta", None)
+st.session_state.setdefault("confirmed_delta_zone", None)
+st.session_state.setdefault("delta_acquisition_request", None)
 
 st.title("Satellite Timeline")
 st.caption("Explore how coastlines, wetlands and river channels change through time.")
@@ -123,12 +207,21 @@ mode = st.segmented_control(
 
 if mode == "Delta movie":
     player_column, context_column = st.columns(
-        [3.25, 1.15], gap="medium", vertical_alignment="top"
+        [3.45, 1.0], gap="medium", vertical_alignment="top"
     )
 
     with context_column.container(border=True):
-        st.subheader("Delta and period", anchor=False)
-        delta_name = st.selectbox("River delta", options=list(DELTAS))
+        st.subheader("Delta selection", anchor=False)
+        counts = type_counts()
+        delta_type = st.selectbox(
+            "Dominant process",
+            options=DELTA_TYPES,
+            format_func=lambda value: f"{value} ({counts[value]})",
+        )
+        delta_name = st.selectbox(
+            "River delta",
+            options=deltas_by_type(delta_type),
+        )
         history = st.selectbox(
             "Time span",
             options=[180, 365, 730],
@@ -144,41 +237,85 @@ if mode == "Delta movie":
             format="%d %%",
             help="Every acquisition below this threshold is included when its image can be read.",
         )
-        build_clicked = st.button(
-            "Create satellite movie",
+        define_area_clicked = st.button(
+            "Define area and create movie",
             type="primary",
-            icon=":material/movie:",
+            icon=":material/crop_free:",
             width="stretch",
         )
 
     delta = DELTAS[delta_name]
+    confirmed_zone = st.session_state.confirmed_delta_zone
+    if not confirmed_zone or confirmed_zone["delta"] != delta_name:
+        confirmed_zone = {
+            "delta": delta_name,
+            "latitude": float(delta["latitude"]),
+            "longitude": float(delta["longitude"]),
+            "width_km": int(delta["width_km"]),
+        }
     bbox = bbox_from_point(
-        delta["latitude"], delta["longitude"], delta["width_km"]
+        confirmed_zone["latitude"],
+        confirmed_zone["longitude"],
+        confirmed_zone["width_km"],
     )
-    request_signature = [delta_name, history, cloud_limit]
+    request_signature = [
+        delta_name,
+        history,
+        cloud_limit,
+        round(confirmed_zone["latitude"], 5),
+        round(confirmed_zone["longitude"], 5),
+        confirmed_zone["width_km"],
+    ]
 
     with context_column:
-        st.caption(delta["description"])
         st.map(
             pd.DataFrame(
-                [{"latitude": delta["latitude"], "longitude": delta["longitude"]}]
+                [
+                    {
+                        "latitude": confirmed_zone["latitude"],
+                        "longitude": confirmed_zone["longitude"],
+                    }
+                ]
             ),
             latitude="latitude",
             longitude="longitude",
             zoom=2,
-            height=205,
+            height=160,
         )
         st.caption(
-            f"{delta['latitude']:.3f}, {delta['longitude']:.3f} · "
-            f"window {delta['width_km']} × {delta['width_km']} km"
+            f"{confirmed_zone['latitude']:.4f}, {confirmed_zone['longitude']:.4f} · "
+            f"{confirmed_zone['width_km']} × {confirmed_zone['width_km']} km"
         )
+        st.caption(delta["description"])
 
     with player_column:
         st.subheader(delta_name, anchor=False)
+        st.caption(
+            f"{delta['type']} · 30-delta catalogue · black and incomplete frames "
+            "are rejected automatically"
+        )
         player_status = st.container()
         movie_slot = st.container()
 
-    if build_clicked:
+    if define_area_clicked:
+        confirm_delta_area(delta_name, history, cloud_limit)
+
+    acquisition_request = st.session_state.pop("delta_acquisition_request", None)
+    if acquisition_request:
+        confirmed_zone = acquisition_request
+        bbox = bbox_from_point(
+            confirmed_zone["latitude"],
+            confirmed_zone["longitude"],
+            confirmed_zone["width_km"],
+        )
+        request_signature = [
+            delta_name,
+            history,
+            cloud_limit,
+            round(confirmed_zone["latitude"], 5),
+            round(confirmed_zone["longitude"], 5),
+            confirmed_zone["width_km"],
+        ]
         end_date = utc_today()
         start_date = end_date - timedelta(days=history)
         try:
@@ -205,6 +342,7 @@ if mode == "Delta movie":
                     "end": end_date.isoformat(),
                     "catalogue_count": len(scene_data),
                     "failures": failures,
+                    "zone": confirmed_zone,
                 }
                 status.update(
                     label=f"Movie ready · {len(frames)} frames",
@@ -215,9 +353,13 @@ if mode == "Delta movie":
             movie_slot.error(str(exc), icon=":material/error:")
 
     movie_meta = st.session_state.movie_meta
+    if movie_meta and "zone" not in movie_meta:
+        st.session_state.movie_meta = None
+        st.session_state.movie_frames = []
+        movie_meta = None
     if movie_meta and movie_meta["request"] != request_signature:
         st.info(
-            "The settings changed. Click **Create satellite movie** to build the new sequence.",
+            "The settings changed. Define and confirm the exact area to build the new sequence.",
             icon=":material/info:",
         )
     elif movie_meta and st.session_state.movie_frames:
@@ -227,7 +369,8 @@ if mode == "Delta movie":
         ).hexdigest()[:12]
         movie_slot.caption(
             f"{len(frames)} frames · {movie_meta['start']} → {movie_meta['end']} · "
-            "all playback controls stay below the image"
+            f"exact area {movie_meta['zone']['width_km']} × "
+            f"{movie_meta['zone']['width_km']} km"
         )
         with movie_slot:
             satellite_movie(
@@ -237,9 +380,12 @@ if mode == "Delta movie":
             )
         failed_count = len(movie_meta["failures"])
         if failed_count:
+            black_count = sum(
+                "black" in failure.lower() for failure in movie_meta["failures"]
+            )
             movie_slot.warning(
                 f"{failed_count} of {movie_meta['catalogue_count']} catalogue acquisitions "
-                "could not be read and were omitted.",
+                f"were omitted, including {black_count} black or incomplete frames.",
                 icon=":material/broken_image:",
             )
         movie_slot.caption(
@@ -250,8 +396,9 @@ if mode == "Delta movie":
         with movie_slot.container(border=True):
             st.subheader("Ready to animate", anchor=False)
             st.write(
-                "Choose a delta in the panel on the right, then click **Create satellite "
-                "movie**. The video and all its controls will appear here."
+                "Choose one of the 30 classified deltas, then define and confirm the exact "
+                "acquisition area. The complete player will appear here without an internal "
+                "scrolling window."
             )
     st.stop()
 

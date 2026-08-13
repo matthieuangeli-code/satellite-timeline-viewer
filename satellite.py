@@ -20,6 +20,7 @@ import requests
 
 EARTH_SEARCH_URL = "https://earth-search.aws.element84.com/v1/search"
 COLLECTION = "sentinel-2-c1-l2a"
+SATELLITE_API_VERSION = 2
 
 
 class SatelliteError(RuntimeError):
@@ -160,6 +161,35 @@ def _to_uint8(rgb: np.ndarray) -> np.ndarray:
     return np.clip((rgb - low) / (high - low) * 255, 0, 255).astype(np.uint8)
 
 
+def _validated_rgb(data: np.ndarray) -> np.ndarray:
+    """Convert a raster crop to RGB and reject blank or black acquisitions."""
+    if data.ndim != 3 or data.shape[0] != 3:
+        raise SatelliteError("The satellite image does not contain three colour bands.")
+
+    raw_rgb = np.moveaxis(data, 0, -1)
+    finite = np.all(np.isfinite(raw_rgb), axis=-1)
+    nonzero = np.any(np.abs(raw_rgb) > 1e-6, axis=-1)
+    covered_fraction = float(np.mean(finite & nonzero))
+
+    # Boundless reads are padded with zeros. A visible black strip therefore
+    # means the selected tile does not cover the requested area completely.
+    if covered_fraction < 0.995:
+        raise SatelliteError(
+            "Black or incomplete image rejected: the acquisition does not cover "
+            "the exact selected area."
+        )
+
+    rgb = _to_uint8(raw_rgb)
+    luminance = (
+        0.2126 * rgb[..., 0] + 0.7152 * rgb[..., 1] + 0.0722 * rgb[..., 2]
+    )
+    dark_fraction = float(np.mean(luminance <= 4))
+    contrast = float(np.percentile(luminance, 98) - np.percentile(luminance, 2))
+    if dark_fraction > 0.90 or contrast < 3:
+        raise SatelliteError("Black or blank satellite image rejected automatically.")
+    return rgb
+
+
 def load_scene_png(
     scene: Scene,
     bbox: tuple[float, float, float, float],
@@ -190,8 +220,7 @@ def load_scene_png(
     except (OSError, rasterio.errors.RasterioError) as exc:
         raise SatelliteError(f"Image Sentinel-2 illisible : {exc}") from exc
 
-    rgb = np.moveaxis(data, 0, -1)
-    rgb = _to_uint8(rgb)
+    rgb = _validated_rgb(data)
     output = BytesIO()
     Image.fromarray(rgb, mode="RGB").save(output, format="JPEG", quality=91)
     return output.getvalue()
@@ -225,8 +254,7 @@ def load_scene_preview_png(
     except (requests.RequestException, OSError, rasterio.errors.RasterioError) as exc:
         raise SatelliteError(f"Aperçu Sentinel-2 illisible : {exc}") from exc
 
-    rgb = np.moveaxis(data, 0, -1)
-    rgb = _to_uint8(rgb)
+    rgb = _validated_rgb(data)
     output = BytesIO()
     Image.fromarray(rgb, mode="RGB").save(output, format="JPEG", quality=88)
     return output.getvalue()

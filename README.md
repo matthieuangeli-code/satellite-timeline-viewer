@@ -19,7 +19,11 @@ The player includes every successfully readable acquisition matching the chosen 
 - optional looping;
 - the real date, UTC time and catalogue cloud value on every frame.
 
-The Delta view is designed as a single-screen workspace: the full movie and playback controls remain together on the left, while a compact world map and build settings stay visible on the right.
+The Delta view is designed as a single-screen workspace: the full movie and playback controls remain together on the left without an internal scrollbar, while a compact world map and build settings stay visible on the right. The catalogue contains 30 deltas, grouped into river-, wave- and tide-dominated examples.
+
+Before any catalogue search or image download, the app asks for explicit confirmation of the exact centre, width and WGS84 bounding box. Blank, black or partially uncovered crops are rejected automatically and never enter the movie.
+
+The three labels are simplified dominant-process categories for visual exploration, following the river–wave–tide framework. Real deltas occupy a continuum and their dominant forcing can vary through time and across the delta. See [Broaddus et al. (2022)](https://doi.org/10.1029/2022GL100355) and [Vulis et al. (2023)](https://doi.org/10.1029/2022GL102684) for quantitative treatments of this framework.
 
 The movie uses the small georeferenced Sentinel-2 preview for fast loading. It is intended to reveal large changes in water, sediment, vegetation, ice and coastline—not fine details. Frames are observations, not interpolated animation.
 

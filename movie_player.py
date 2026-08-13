@@ -38,24 +38,31 @@ _PLAYER_HTML = """
 _PLAYER_CSS = """
 .player-shell {
   width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto auto auto;
+  overflow: hidden;
   color: var(--st-text-color);
   font-family: var(--st-font, sans-serif);
 }
+* { box-sizing: border-box; }
 .stage {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 9;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
   border: 1px solid var(--st-border-color);
   border-radius: var(--st-base-radius, 12px);
-  background: #071012;
+  background: var(--st-secondary-background-color, #152125);
 }
 #frame {
   width: 100%;
   height: 100%;
   display: block;
   object-fit: contain;
-  background: #071012;
+  background: var(--st-secondary-background-color, #152125);
 }
 .topline {
   position: absolute;
@@ -83,10 +90,10 @@ _PLAYER_CSS = """
   pointer-events: none;
 }
 .controls {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(104px, auto) auto auto auto auto;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
   margin-top: 9px;
 }
 button, select {
@@ -119,6 +126,14 @@ select { padding: 0 10px; }
   justify-content: space-between;
   color: var(--st-gray-text-color, var(--st-text-color));
   font-size: 12px;
+}
+@media (max-width: 520px) {
+  .controls {
+    grid-template-columns: auto minmax(96px, 1fr) auto auto auto auto;
+    gap: 5px;
+  }
+  button { padding: 0 8px; }
+  .speed-label { display: none; }
 }
 """
 
@@ -238,5 +253,5 @@ def satellite_movie(frames: list[dict], *, movie_id: str, key: str):
         key=key,
         data={"frames": frames, "movie_id": movie_id},
         width="stretch",
-        height=610,
+        height=500,
     )

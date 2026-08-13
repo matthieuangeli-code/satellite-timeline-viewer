@@ -1,8 +1,10 @@
 from datetime import date
 
+import numpy as np
+
 import pytest
 
-from satellite import bbox_from_point, parse_scenes
+from satellite import SatelliteError, _validated_rgb, bbox_from_point, parse_scenes
 
 
 def feature(identifier, acquired, cloud, visual=True):
@@ -58,3 +60,23 @@ def test_parse_scenes_prefers_tile_covering_selected_area():
     right["bbox"] = [5, 0, 10, 5]
     scenes = parse_scenes([left, right], target_bbox=(6, 1, 8, 4))
     assert [scene.id for scene in scenes] == ["right"]
+
+
+def test_black_frame_is_rejected():
+    with pytest.raises(SatelliteError, match="Black"):
+        _validated_rgb(np.zeros((3, 40, 40), dtype=np.uint8))
+
+
+def test_frame_with_black_border_is_rejected():
+    data = np.full((3, 40, 40), 80, dtype=np.uint8)
+    data[:, :, :2] = 0
+    with pytest.raises(SatelliteError, match="Black"):
+        _validated_rgb(data)
+
+
+def test_complete_non_black_frame_is_accepted():
+    ramp = np.tile(np.arange(1, 41, dtype=np.uint8), (40, 1))
+    data = np.stack([ramp + 10, ramp + 20, ramp + 30])
+    rgb = _validated_rgb(data)
+    assert rgb.shape == (40, 40, 3)
+    assert rgb.dtype == np.uint8
