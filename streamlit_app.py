@@ -17,7 +17,7 @@ from deltas import (
     deltas_by_type,
     type_counts,
 )
-from map_picker import area_preview, location_picker
+from map_picker import location_picker
 from movie_player import encode_frame, satellite_movie
 
 # Streamlit can hot-reload this entrypoint while retaining an older imported
@@ -121,6 +121,18 @@ def reset_free_explorer() -> None:
     st.session_state.pop("timeline_index", None)
 
 
+def sync_pending_delta_from_map(map_key: str) -> None:
+    """Copy a map click into the dialog controls before the next rerun."""
+    component_state = st.session_state.get(map_key)
+    selection = getattr(component_state, "selection", None)
+    if selection is None and isinstance(component_state, dict):
+        selection = component_state.get("selection")
+    if not selection:
+        return
+    st.session_state.pending_delta_latitude = round(float(selection["lat"]), 6)
+    st.session_state.pending_delta_longitude = round(float(selection["lng"]), 6)
+
+
 @st.dialog("Confirm the exact acquisition area", width="large")
 def confirm_delta_area(
     delta_name: str,
@@ -187,15 +199,22 @@ def confirm_delta_area(
         )
     with map_column:
         st.subheader("Selected area", anchor=False)
-        area_preview(
+        map_key = f"delta-confirm-map-{delta_name}"
+        location_picker(
             latitude,
             longitude,
             bbox,
             height=390,
-            key=f"delta-confirm-preview-{delta_name}",
+            key=map_key,
+            zoom=7,
+            interactive=True,
+            fit_bounds=True,
+            hint="Click the map to move the centre of the green area.",
+            on_selection_change=lambda: sync_pending_delta_from_map(map_key),
         )
         st.caption(
-            f"Green square: exact {width_km} × {width_km} km acquisition box."
+            f"Green square: exact {width_km} × {width_km} km acquisition box. "
+            "Use the slider to resize it."
         )
 
     if confirm_clicked:
