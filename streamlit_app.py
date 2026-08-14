@@ -25,15 +25,17 @@ from movie_player import encode_frame, satellite_movie
 # satellite module during normal widget reruns.
 import satellite as satellite_api
 
-if getattr(satellite_api, "SATELLITE_API_VERSION", 0) < 5:
+if getattr(satellite_api, "SATELLITE_API_VERSION", 0) < 6:
     satellite_api = importlib.reload(satellite_api)
 
 from satellite import (
     MAX_AREA_WIDTH_KM,
+    MOVIE_TIME_STEPS,
     SENTINEL2_ARCHIVE_START,
     SatelliteError,
     Scene,
     bbox_from_point,
+    group_scenes_by_time_step,
     load_scene_png,
     search_scenes,
     utc_today,
@@ -61,42 +63,55 @@ def cached_image(scene_data, bbox, output_size=900):
 
 
 @st.cache_data(max_entries=8, show_spinner=False)
-def cached_movie(scene_data, bbox, output_size=1000, validation_version=5):
-    """Read the movie frames concurrently and retain their chronological order."""
-    if validation_version != 5:
+def cached_movie(scene_groups, bbox, output_size=1000, validation_version=6):
+    """Read the clearest usable candidate from each requested time period."""
+    if validation_version != 6:
         raise ValueError("Unsupported frame validation version.")
     completed: dict[int, dict] = {}
     failures: list[str] = []
 
-    def fetch(index, item):
-        scene = Scene.from_dict(item)
-        image = satellite_api.load_scene_preview_png(
-            scene, tuple(bbox), output_size
-        )
-        return index, encode_frame(
-            image,
-            scene.datetime.strftime("%d %b %Y · %H:%M UTC"),
-            scene.cloud_cover,
-        )
+    def fetch(index, candidates):
+        candidate_failures = []
+        for item in candidates:
+            scene = Scene.from_dict(item)
+            try:
+                image = satellite_api.load_scene_preview_png(
+                    scene, tuple(bbox), output_size
+                )
+                frame = encode_frame(
+                    image,
+                    scene.datetime.strftime("%d %b %Y · %H:%M UTC"),
+                    scene.cloud_cover,
+                )
+                return index, frame, candidate_failures
+            except (SatelliteError, OSError, ValueError) as exc:
+                candidate_failures.append(f"{scene.id}: {exc}")
+        return index, None, candidate_failures
 
-    workers = min(6, max(1, len(scene_data)))
+    workers = min(6, max(1, len(scene_groups)))
     with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = {
-            executor.submit(fetch, index, item): (index, item["id"])
-            for index, item in enumerate(scene_data)
+            executor.submit(fetch, index, candidates): index
+            for index, candidates in enumerate(scene_groups)
         }
         for future in as_completed(futures):
-            index, scene_id = futures[future]
-            try:
-                result_index, frame = future.result()
+            result_index, frame, candidate_failures = future.result()
+            failures.extend(candidate_failures)
+            if frame is not None:
                 completed[result_index] = frame
-            except (SatelliteError, OSError, ValueError) as exc:
-                failures.append(f"{scene_id}: {exc}")
 
     return [completed[index] for index in sorted(completed)], failures
 
 
 PERIOD_OPTIONS = [180, 365, 730, 1825, 3650, "archive"]
+TIME_STEP_LABELS = {
+    "all": "Every usable acquisition",
+    "week": "Best image each week",
+    "month": "Best image each month",
+    "quarter": "Best image every 3 months",
+    "half_year": "Best image every 6 months",
+    "year": "Best image each year",
+}
 
 
 def period_label(period: int | str) -> str:
@@ -114,6 +129,10 @@ def period_start(period: int | str, end_date):
     if period == "archive":
         return SENTINEL2_ARCHIVE_START
     return max(SENTINEL2_ARCHIVE_START, end_date - timedelta(days=period))
+
+
+def time_step_label(time_step: str) -> str:
+    return TIME_STEP_LABELS[time_step]
 
 
 def reset_free_explorer() -> None:
@@ -139,6 +158,7 @@ def confirm_delta_area(
     delta_name: str,
     history: int | str,
     cloud_limit: int,
+    time_step: str,
 ) -> None:
     """Require an explicit area confirmation before any imagery is fetched."""
     delta = DELTAS[delta_name]
@@ -157,6 +177,7 @@ def confirm_delta_area(
         "Adjust the centre and width if needed. Sentinel-2 search and image "
         "downloads start only after you confirm this box."
     )
+    st.caption(f"Movie sampling: **{time_step_label(time_step)}**.")
     controls_column, map_column = st.columns(
         [0.9, 1.25], gap="medium", vertical_alignment="top"
     )
@@ -235,6 +256,7 @@ def confirm_delta_area(
             **zone,
             "history": history,
             "cloud_limit": cloud_limit,
+            "time_step": time_step,
         }
         st.rerun()
 
@@ -285,6 +307,16 @@ if mode == "Delta movie":
             index=1,
             format_func=period_label,
         )
+        time_step = st.selectbox(
+            "Movie time step",
+            options=MOVIE_TIME_STEPS,
+            index=MOVIE_TIME_STEPS.index("month"),
+            format_func=time_step_label,
+            help=(
+                "For each period, candidates are ranked by catalogue cloud cover. "
+                "If the clearest image cannot be read, the next candidate is tried."
+            ),
+        )
         st.caption("Sentinel-2 archive available from 27 June 2015 to today.")
         cloud_limit = st.slider(
             "Maximum catalogue cloud",
@@ -328,6 +360,7 @@ if mode == "Delta movie":
         round(confirmed_zone["latitude"], 5),
         round(confirmed_zone["longitude"], 5),
         confirmed_zone["width_km"],
+        time_step,
     ]
 
     with context_column:
@@ -357,11 +390,12 @@ if mode == "Delta movie":
         movie_slot = st.container()
 
     if define_area_clicked:
-        confirm_delta_area(delta_name, history, cloud_limit)
+        confirm_delta_area(delta_name, history, cloud_limit, time_step)
 
     acquisition_request = st.session_state.pop("delta_acquisition_request", None)
     if acquisition_request:
         confirmed_zone = acquisition_request
+        time_step = confirmed_zone.get("time_step", time_step)
         bbox = bbox_from_point(
             confirmed_zone["latitude"],
             confirmed_zone["longitude"],
@@ -374,6 +408,7 @@ if mode == "Delta movie":
             round(confirmed_zone["latitude"], 5),
             round(confirmed_zone["longitude"], 5),
             confirmed_zone["width_km"],
+            time_step,
         ]
         end_date = utc_today()
         start_date = period_start(history, end_date)
@@ -389,10 +424,17 @@ if mode == "Delta movie":
                     raise SatelliteError(
                         "No Sentinel-2 acquisitions match this period and cloud threshold."
                     )
+                scenes = [Scene.from_dict(item) for item in scene_data]
+                scene_groups = group_scenes_by_time_step(scenes, time_step)
+                grouped_scene_data = [
+                    [scene.to_dict() for scene in candidates]
+                    for candidates in scene_groups
+                ]
                 status.write(
-                    f"Reading {len(scene_data)} real satellite acquisitions…"
+                    f"Selecting the clearest readable image for each of "
+                    f"{len(scene_groups)} time periods from {len(scene_data)} acquisitions…"
                 )
-                frames, failures = cached_movie(scene_data, bbox)
+                frames, failures = cached_movie(grouped_scene_data, bbox)
                 if not frames:
                     incomplete_count = sum(
                         "black or incomplete" in failure.lower()
@@ -412,6 +454,8 @@ if mode == "Delta movie":
                     "start": start_date.isoformat(),
                     "end": end_date.isoformat(),
                     "catalogue_count": len(scene_data),
+                    "time_bucket_count": len(scene_groups),
+                    "time_step": time_step,
                     "failures": failures,
                     "zone": confirmed_zone,
                 }
@@ -446,6 +490,7 @@ if mode == "Delta movie":
         ).hexdigest()[:12]
         movie_slot.caption(
             f"{len(frames)} frames · {movie_meta['start']} → {movie_meta['end']} · "
+            f"{time_step_label(movie_meta['time_step'])} · "
             f"exact area {movie_meta['zone']['width_km']} × "
             f"{movie_meta['zone']['width_km']} km"
         )
@@ -456,13 +501,15 @@ if mode == "Delta movie":
                 key=f"delta-movie-{movie_id}",
             )
         failed_count = len(movie_meta["failures"])
-        if failed_count:
+        missing_periods = movie_meta["time_bucket_count"] - len(frames)
+        if failed_count or missing_periods:
             black_count = sum(
                 "black" in failure.lower() for failure in movie_meta["failures"]
             )
             movie_slot.warning(
-                f"{failed_count} of {movie_meta['catalogue_count']} catalogue acquisitions "
-                f"were omitted, including {black_count} black or incomplete frames.",
+                f"{failed_count} candidate images were rejected while selecting the "
+                f"clearest frames, including {black_count} black or incomplete images. "
+                f"{missing_periods} time periods have no readable frame.",
                 icon=":material/broken_image:",
             )
         movie_slot.caption(

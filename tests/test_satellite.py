@@ -10,6 +10,7 @@ from satellite import (
     SatelliteError,
     _validated_rgb,
     bbox_from_point,
+    group_scenes_by_time_step,
     parse_scenes,
     search_scenes,
 )
@@ -88,6 +89,40 @@ def test_parse_scenes_keeps_adjacent_tiles_for_a_cross_boundary_mosaic():
         "https://example.test/left-preview.tif",
         "https://example.test/right-preview.tif",
     )
+
+
+def test_monthly_time_step_ranks_clearest_scene_first():
+    scenes = parse_scenes(
+        [
+            feature("jan-cloudy", "2026-01-03T10:00:00Z", 35),
+            feature("jan-clear", "2026-01-20T10:00:00Z", 4),
+            feature("feb", "2026-02-10T10:00:00Z", 8),
+        ]
+    )
+
+    groups = group_scenes_by_time_step(scenes, "month")
+
+    assert [[scene.id for scene in group] for group in groups] == [
+        ["jan-clear", "jan-cloudy"],
+        ["feb"],
+    ]
+
+
+def test_quarterly_time_step_creates_one_group_per_quarter():
+    scenes = parse_scenes(
+        [
+            feature("jan", "2026-01-03T10:00:00Z", 5),
+            feature("mar", "2026-03-20T10:00:00Z", 3),
+            feature("apr", "2026-04-10T10:00:00Z", 7),
+        ]
+    )
+
+    groups = group_scenes_by_time_step(scenes, "quarter")
+
+    assert [[scene.id for scene in group] for group in groups] == [
+        ["mar", "jan"],
+        ["apr"],
+    ]
 
 
 def test_black_frame_is_rejected():

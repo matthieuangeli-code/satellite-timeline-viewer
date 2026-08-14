@@ -10,7 +10,7 @@ Choose one of ten curated river deltas and build a chronological satellite time-
 - Danube, Rhône and Niger inland delta;
 - Amazon, Lena and Okavango inland delta.
 
-The player includes every successfully readable acquisition matching the chosen period and catalogue-cloud threshold. It provides:
+The player can include every successfully readable acquisition or the clearest readable image from each selected time interval. It provides:
 
 - play and pause;
 - previous and next frame;
@@ -20,6 +20,8 @@ The player includes every successfully readable acquisition matching the chosen 
 - the real date, UTC time and catalogue cloud value on every frame.
 - mouse-wheel and button zoom up to 8×, click-and-drag panning, fit-to-image reset and full-screen viewing;
 - a responsive image stage, with the acquisition date and every playback/zoom control kept outside the satellite image.
+
+Before building the movie, choose its time step: every acquisition, weekly, monthly, quarterly, every six months or yearly. For each period, the app ranks catalogue acquisitions by cloud cover and loads the clearest readable candidate. If that candidate is black, incomplete or unavailable, it automatically tries the next-clearest acquisition from the same period.
 
 The Delta view is designed as a single-screen workspace: the full movie and playback controls remain together on the left without an internal scrollbar, while a compact world map and build settings stay visible on the right. The catalogue contains 30 deltas, grouped into river-, wave- and tide-dominated examples.
 

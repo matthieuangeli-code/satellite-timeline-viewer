@@ -21,11 +21,12 @@ import requests
 
 EARTH_SEARCH_URL = "https://earth-search.aws.element84.com/v1/search"
 COLLECTION = "sentinel-2-c1-l2a"
-SATELLITE_API_VERSION = 5
+SATELLITE_API_VERSION = 6
 SENTINEL2_ARCHIVE_START = date(2015, 6, 27)
 MAX_AREA_WIDTH_KM = 500
 CATALOGUE_PAGE_SIZE = 100
 CATALOGUE_ATTEMPTS = 4
+MOVIE_TIME_STEPS = ("all", "week", "month", "quarter", "half_year", "year")
 
 
 class SatelliteError(RuntimeError):
@@ -162,6 +163,40 @@ def parse_scenes(
             )
         )
     return sorted(mosaics, key=lambda scene: scene.datetime)
+
+
+def group_scenes_by_time_step(
+    scenes: list[Scene], time_step: str
+) -> list[list[Scene]]:
+    """Group acquisitions into periods, clearest candidate first in each one."""
+    if time_step not in MOVIE_TIME_STEPS:
+        raise ValueError(f"Unsupported movie time step: {time_step}")
+
+    ordered = sorted(scenes, key=lambda scene: scene.datetime)
+    if time_step == "all":
+        return [[scene] for scene in ordered]
+
+    def bucket(scene: Scene) -> tuple[int, int]:
+        acquired = scene.datetime
+        if time_step == "week":
+            iso = acquired.isocalendar()
+            return iso.year, iso.week
+        if time_step == "month":
+            return acquired.year, acquired.month
+        if time_step == "quarter":
+            return acquired.year, (acquired.month - 1) // 3 + 1
+        if time_step == "half_year":
+            return acquired.year, 1 if acquired.month <= 6 else 2
+        return acquired.year, 1
+
+    groups: dict[tuple[int, int], list[Scene]] = {}
+    for scene in ordered:
+        groups.setdefault(bucket(scene), []).append(scene)
+
+    return [
+        sorted(candidates, key=lambda scene: (scene.cloud_cover, scene.datetime))
+        for candidates in groups.values()
+    ]
 
 
 def search_scenes(
