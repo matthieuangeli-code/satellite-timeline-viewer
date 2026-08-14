@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 from satellite import (
+    MAX_AREA_WIDTH_KM,
     SENTINEL2_ARCHIVE_START,
     SatelliteError,
     _validated_rgb,
@@ -38,13 +39,14 @@ def test_bbox_validates_inputs():
     with pytest.raises(ValueError):
         bbox_from_point(91, 0, 5)
     with pytest.raises(ValueError):
-        bbox_from_point(0, 0, 100)
+        bbox_from_point(0, 0, MAX_AREA_WIDTH_KM + 1)
 
 
 def test_bbox_supports_large_delta_window():
-    west, south, east, north = bbox_from_point(30, 20, 46)
+    west, south, east, north = bbox_from_point(30, 20, 300)
     assert west < 20 < east
     assert south < 30 < north
+    assert (north - south) * 110.574 == pytest.approx(300, rel=0.01)
 
 
 def test_parse_scenes_sorts_and_keeps_clearer_overlap():
@@ -154,3 +156,38 @@ def test_search_follows_all_catalogue_pages(monkeypatch):
     assert [scene.id for scene in scenes] == ["first", "second"]
     assert len(calls) == 2
     assert calls[1][1] == {"token": "page-2"}
+
+
+def test_search_retries_transient_catalogue_500(monkeypatch):
+    calls = []
+
+    class Response:
+        def __init__(self, status_code, page=None):
+            self.status_code = status_code
+            self.page = page or {"features": [], "links": []}
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                error = __import__("requests").HTTPError("temporary server error")
+                error.response = self
+                raise error
+
+        def json(self):
+            return self.page
+
+    responses = [Response(500), Response(502), Response(200)]
+
+    def fake_post(url, json, timeout):
+        calls.append((url, json, timeout))
+        return responses.pop(0)
+
+    monkeypatch.setattr("satellite.requests.post", fake_post)
+    monkeypatch.setattr("satellite.time.sleep", lambda _seconds: None)
+
+    scenes = search_scenes(
+        (1.0, 2.0, 3.0, 4.0), date(2026, 1, 1), date(2026, 2, 1), 20
+    )
+
+    assert scenes == []
+    assert len(calls) == 3
+    assert calls[0][1]["limit"] == 100

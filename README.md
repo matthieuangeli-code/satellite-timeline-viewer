@@ -18,10 +18,12 @@ The player includes every successfully readable acquisition matching the chosen 
 - 0.5×, 1×, 2× and 4× playback speed;
 - optional looping;
 - the real date, UTC time and catalogue cloud value on every frame.
+- mouse-wheel and button zoom up to 8×, click-and-drag panning, fit-to-image reset and full-screen viewing;
+- a responsive image stage, with the acquisition date and every playback/zoom control kept outside the satellite image.
 
 The Delta view is designed as a single-screen workspace: the full movie and playback controls remain together on the left without an internal scrollbar, while a compact world map and build settings stay visible on the right. The catalogue contains 30 deltas, grouped into river-, wave- and tide-dominated examples.
 
-Before any catalogue search or image download, the app asks for explicit confirmation of the exact centre, width and WGS84 bounding box. Blank, black or partially uncovered crops are rejected automatically and never enter the movie.
+Before any catalogue search or image download, the app asks for explicit confirmation of the exact centre, width and WGS84 bounding box. The selectable square can range up to 500 km for very large deltas. Blank, black or partially uncovered crops are rejected automatically and never enter the movie.
 
 When several Sentinel-2 tiles from the same acquisition intersect the selected square, their previews are mosaicked before validation. The curated Orinoco preset is positioned inside a stable tile because its former centre sat directly on the 20PPQ/20PQQ boundary.
 
@@ -52,7 +54,7 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
-No API key is required. The app uses the public Earth Search catalogue and Sentinel-2 COG/preview assets on AWS Open Data.
+No API key is required. The app uses the public Earth Search catalogue and Sentinel-2 COG/preview assets on AWS Open Data. Transient catalogue errors (HTTP 429/5xx and connection failures) are retried automatically with smaller result pages.
 
 ## Tests
 

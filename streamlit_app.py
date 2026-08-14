@@ -25,10 +25,11 @@ from movie_player import encode_frame, satellite_movie
 # satellite module during normal widget reruns.
 import satellite as satellite_api
 
-if getattr(satellite_api, "SATELLITE_API_VERSION", 0) < 4:
+if getattr(satellite_api, "SATELLITE_API_VERSION", 0) < 5:
     satellite_api = importlib.reload(satellite_api)
 
 from satellite import (
+    MAX_AREA_WIDTH_KM,
     SENTINEL2_ARCHIVE_START,
     SatelliteError,
     Scene,
@@ -60,9 +61,9 @@ def cached_image(scene_data, bbox, output_size=900):
 
 
 @st.cache_data(max_entries=8, show_spinner=False)
-def cached_movie(scene_data, bbox, output_size=720, validation_version=4):
+def cached_movie(scene_data, bbox, output_size=1000, validation_version=5):
     """Read the movie frames concurrently and retain their chronological order."""
-    if validation_version != 4:
+    if validation_version != 5:
         raise ValueError("Unsupported frame validation version.")
     completed: dict[int, dict] = {}
     failures: list[str] = []
@@ -179,10 +180,14 @@ def confirm_delta_area(
         width_km = st.slider(
             "Square area width",
             min_value=4,
-            max_value=80,
+            max_value=MAX_AREA_WIDTH_KM,
             step=2,
             format="%d km",
             key="pending_delta_width",
+            help=(
+                "Large deltas can be viewed up to 500 km. Larger areas cross more "
+                "Sentinel-2 tiles and take longer to build."
+            ),
         )
     bbox = bbox_from_point(latitude, longitude, width_km)
     west, south, east, north = bbox
@@ -480,11 +485,14 @@ with st.sidebar:
     width_km = st.slider(
         "Area width",
         1,
-        30,
+        MAX_AREA_WIDTH_KM,
         5,
         1,
         format="%d km",
-        help="The displayed image is a square centred on the marker.",
+        help=(
+            "The image is a square centred on the marker. Large areas require "
+            "more tiles and may take longer to load."
+        ),
     )
     history = st.selectbox(
         "History to load",
@@ -604,10 +612,19 @@ with result_slot.container(horizontal=True):
 try:
     with result_slot.skeleton():
         image = cached_image(selected.to_dict(), search_bbox)
-        result_slot.image(
+        single_frame = encode_frame(
             image,
-            width="stretch",
-            caption=f"Sentinel-2 · {selected.datetime:%d/%m/%Y at %H:%M UTC}",
+            selected.datetime.strftime("%d %b %Y · %H:%M UTC"),
+            selected.cloud_cover,
         )
+        image_id = hashlib.sha256(
+            f"{selected.id}:{search_bbox}".encode()
+        ).hexdigest()[:12]
+        with result_slot:
+            satellite_movie(
+                [single_frame],
+                movie_id=image_id,
+                key=f"single-image-{image_id}",
+            )
 except SatelliteError as exc:
     result_slot.error(str(exc), icon=":material/broken_image:")

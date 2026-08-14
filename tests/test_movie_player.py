@@ -1,4 +1,4 @@
-from movie_player import _PLAYER_CSS, encode_frame
+from movie_player import _PLAYER_CSS, _PLAYER_HTML, _PLAYER_JS, encode_frame
 
 
 def test_encode_frame_creates_browser_safe_data_url():
@@ -8,6 +8,15 @@ def test_encode_frame_creates_browser_safe_data_url():
     assert frame["cloud_cover"] == 12.5
 
 
-def test_player_uses_fixed_grid_without_internal_scroll():
-    assert "grid-template-rows: minmax(0, 1fr) auto auto auto;" in _PLAYER_CSS
-    assert _PLAYER_CSS.count("overflow: hidden;") >= 2
+def test_date_and_controls_are_outside_the_image_stage():
+    stage = _PLAYER_HTML.split('<div class="stage"', 1)[1].split("</div>", 1)[0]
+    assert "date-label" not in stage
+    assert "control-panel" not in stage
+
+
+def test_player_supports_pan_zoom_fit_and_responsive_height():
+    assert "calc(100vh - 350px)" in _PLAYER_CSS
+    assert "stage.onwheel" in _PLAYER_JS
+    assert "stage.onpointermove" in _PLAYER_JS
+    assert "function resetView()" in _PLAYER_JS
+    assert "requestFullscreen" in _PLAYER_JS

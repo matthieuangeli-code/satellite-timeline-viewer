@@ -6,6 +6,7 @@ from dataclasses import asdict, dataclass, replace
 from datetime import date, datetime, timezone
 from io import BytesIO
 import math
+import time
 from typing import Any
 
 import numpy as np
@@ -20,8 +21,11 @@ import requests
 
 EARTH_SEARCH_URL = "https://earth-search.aws.element84.com/v1/search"
 COLLECTION = "sentinel-2-c1-l2a"
-SATELLITE_API_VERSION = 4
+SATELLITE_API_VERSION = 5
 SENTINEL2_ARCHIVE_START = date(2015, 6, 27)
+MAX_AREA_WIDTH_KM = 500
+CATALOGUE_PAGE_SIZE = 100
+CATALOGUE_ATTEMPTS = 4
 
 
 class SatelliteError(RuntimeError):
@@ -61,8 +65,10 @@ def bbox_from_point(
     """Return a WGS84 square around a point, safely clamped to the globe."""
     if not -90 <= latitude <= 90 or not -180 <= longitude <= 180:
         raise ValueError("Coordonnées hors limites.")
-    if not 0.5 <= width_km <= 80:
-        raise ValueError("La largeur doit être comprise entre 0,5 et 80 km.")
+    if not 0.5 <= width_km <= MAX_AREA_WIDTH_KM:
+        raise ValueError(
+            f"La largeur doit être comprise entre 0,5 et {MAX_AREA_WIDTH_KM} km."
+        )
     half_lat = width_km / 2 / 110.574
     cos_lat = max(math.cos(math.radians(latitude)), 0.05)
     half_lon = width_km / 2 / (111.320 * cos_lat)
@@ -171,7 +177,9 @@ def search_scenes(
         "collections": [COLLECTION],
         "bbox": list(bbox),
         "datetime": f"{start_date.isoformat()}T00:00:00Z/{end_date.isoformat()}T23:59:59Z",
-        "limit": 200,
+        # Smaller pages put less pressure on the public catalogue for large
+        # areas and long time ranges, which reduces transient HTTP 500 errors.
+        "limit": CATALOGUE_PAGE_SIZE,
         "query": {"eo:cloud_cover": {"lte": cloud_limit}},
     }
     features: list[dict[str, Any]] = []
@@ -180,13 +188,9 @@ def search_scenes(
     request_body: dict[str, Any] | None = payload
     try:
         for _page in range(50):
-            if request_method == "POST":
-                response = requests.post(
-                    request_url, json=request_body, timeout=45
-                )
-            else:
-                response = requests.get(request_url, timeout=45)
-            response.raise_for_status()
+            response = _request_catalogue_page(
+                request_url, request_method, request_body
+            )
             page = response.json()
             features.extend(page.get("features", []))
 
@@ -208,6 +212,31 @@ def search_scenes(
         raise SatelliteError(f"Catalogue Sentinel-2 indisponible : {exc}") from exc
     scenes = parse_scenes(features, bbox)
     return [scene for scene in scenes if scene.cloud_cover <= cloud_limit]
+
+
+def _request_catalogue_page(
+    url: str,
+    method: str,
+    body: dict[str, Any] | None,
+):
+    """Read one STAC page and retry transient public-service failures."""
+    last_error: requests.RequestException | None = None
+    for attempt in range(CATALOGUE_ATTEMPTS):
+        try:
+            if method == "POST":
+                response = requests.post(url, json=body, timeout=(10, 60))
+            else:
+                response = requests.get(url, timeout=(10, 60))
+            response.raise_for_status()
+            return response
+        except requests.RequestException as exc:
+            last_error = exc
+            status = getattr(getattr(exc, "response", None), "status_code", None)
+            retryable = status is None or status == 429 or status >= 500
+            if not retryable or attempt == CATALOGUE_ATTEMPTS - 1:
+                raise
+            time.sleep(0.6 * (2**attempt))
+    raise last_error  # pragma: no cover - the loop always returns or raises
 
 
 def _to_uint8(rgb: np.ndarray) -> np.ndarray:
