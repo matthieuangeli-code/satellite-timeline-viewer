@@ -48,6 +48,14 @@ st.set_page_config(
     layout="wide",
 )
 
+IMAGE_QUALITY_OPTIONS = ("high", "preview")
+IMAGE_QUALITY_LABELS = {
+    "high": "High detail · Sentinel-2 COG",
+    "preview": "Fast preview",
+}
+HIGH_DETAIL_OUTPUT_SIZE = 1800
+PREVIEW_OUTPUT_SIZE = 1000
+
 
 @st.cache_data(ttl="30m", max_entries=40, show_spinner=False)
 def cached_search(bbox, start_date, end_date, cloud_limit):
@@ -58,15 +66,22 @@ def cached_search(bbox, start_date, end_date, cloud_limit):
 
 
 @st.cache_data(max_entries=80, show_spinner=False)
-def cached_image(scene_data, bbox, output_size=900):
+def cached_image(scene_data, bbox, output_size=HIGH_DETAIL_OUTPUT_SIZE):
     return load_scene_png(Scene.from_dict(scene_data), tuple(bbox), output_size)
 
 
 @st.cache_data(max_entries=8, show_spinner=False)
-def cached_movie(scene_groups, bbox, output_size=1000, validation_version=6):
+def cached_movie(scene_groups, bbox, image_quality, validation_version=7):
     """Read the clearest usable candidate from each requested time period."""
-    if validation_version != 6:
+    if validation_version != 7:
         raise ValueError("Unsupported frame validation version.")
+    if image_quality not in IMAGE_QUALITY_OPTIONS:
+        raise ValueError("Unsupported satellite image quality.")
+    output_size = (
+        HIGH_DETAIL_OUTPUT_SIZE
+        if image_quality == "high"
+        else PREVIEW_OUTPUT_SIZE
+    )
     completed: dict[int, dict] = {}
     failures: list[str] = []
 
@@ -75,9 +90,14 @@ def cached_movie(scene_groups, bbox, output_size=1000, validation_version=6):
         for item in candidates:
             scene = Scene.from_dict(item)
             try:
-                image = satellite_api.load_scene_preview_png(
-                    scene, tuple(bbox), output_size
-                )
+                if image_quality == "high":
+                    image = satellite_api.load_scene_png(
+                        scene, tuple(bbox), output_size
+                    )
+                else:
+                    image = satellite_api.load_scene_preview_png(
+                        scene, tuple(bbox), output_size
+                    )
                 frame = encode_frame(
                     image,
                     scene.datetime.strftime("%d %b %Y · %H:%M UTC"),
@@ -135,6 +155,10 @@ def time_step_label(time_step: str) -> str:
     return TIME_STEP_LABELS[time_step]
 
 
+def image_quality_label(image_quality: str) -> str:
+    return IMAGE_QUALITY_LABELS[image_quality]
+
+
 def reset_free_explorer() -> None:
     st.session_state.free_scenes = []
     st.session_state.free_search_bbox = None
@@ -159,6 +183,7 @@ def confirm_delta_area(
     history: int | str,
     cloud_limit: int,
     time_step: str,
+    image_quality: str,
 ) -> None:
     """Require an explicit area confirmation before any imagery is fetched."""
     delta = DELTAS[delta_name]
@@ -178,6 +203,7 @@ def confirm_delta_area(
         "downloads start only after you confirm this box."
     )
     st.caption(f"Movie sampling: **{time_step_label(time_step)}**.")
+    st.caption(f"Image source: **{image_quality_label(image_quality)}**.")
     controls_column, map_column = st.columns(
         [0.9, 1.25], gap="medium", vertical_alignment="top"
     )
@@ -235,13 +261,22 @@ def confirm_delta_area(
             zoom=7,
             interactive=True,
             fit_bounds=True,
-            hint="Click the map to move the centre of the green area.",
+            hint="Click the map or drag the green point to move the centre.",
             on_selection_change=lambda: sync_pending_delta_from_map(map_key),
         )
         st.caption(
             f"Green square: exact {width_km} × {width_km} km acquisition box. "
             "Use the slider to resize it."
         )
+        if image_quality == "high":
+            displayed_resolution = max(
+                10.0, width_km * 1000 / HIGH_DETAIL_OUTPUT_SIZE
+            )
+            st.caption(
+                f"High-detail frame: {HIGH_DETAIL_OUTPUT_SIZE} × "
+                f"{HIGH_DETAIL_OUTPUT_SIZE} px · approximately "
+                f"{displayed_resolution:.0f} m per displayed pixel for this area."
+            )
 
     if confirm_clicked:
         zone = {
@@ -257,6 +292,7 @@ def confirm_delta_area(
             "history": history,
             "cloud_limit": cloud_limit,
             "time_step": time_step,
+            "image_quality": image_quality,
         }
         st.rerun()
 
@@ -317,6 +353,18 @@ if mode == "Delta movie":
                 "If the clearest image cannot be read, the next candidate is tried."
             ),
         )
+        image_quality = st.segmented_control(
+            "Image quality",
+            options=IMAGE_QUALITY_OPTIONS,
+            default="high",
+            required=True,
+            format_func=image_quality_label,
+            width="stretch",
+            help=(
+                "High detail reads the public 10 m Sentinel-2 true-colour COGs. "
+                "Fast preview uses smaller overview files and builds much faster."
+            ),
+        )
         st.caption("Sentinel-2 archive available from 27 June 2015 to today.")
         cloud_limit = st.slider(
             "Maximum catalogue cloud",
@@ -361,6 +409,7 @@ if mode == "Delta movie":
         round(confirmed_zone["longitude"], 5),
         confirmed_zone["width_km"],
         time_step,
+        image_quality,
     ]
 
     with context_column:
@@ -390,12 +439,15 @@ if mode == "Delta movie":
         movie_slot = st.container()
 
     if define_area_clicked:
-        confirm_delta_area(delta_name, history, cloud_limit, time_step)
+        confirm_delta_area(
+            delta_name, history, cloud_limit, time_step, image_quality
+        )
 
     acquisition_request = st.session_state.pop("delta_acquisition_request", None)
     if acquisition_request:
         confirmed_zone = acquisition_request
         time_step = confirmed_zone.get("time_step", time_step)
+        image_quality = confirmed_zone.get("image_quality", image_quality)
         bbox = bbox_from_point(
             confirmed_zone["latitude"],
             confirmed_zone["longitude"],
@@ -409,6 +461,7 @@ if mode == "Delta movie":
             round(confirmed_zone["longitude"], 5),
             confirmed_zone["width_km"],
             time_step,
+            image_quality,
         ]
         end_date = utc_today()
         start_date = period_start(history, end_date)
@@ -434,7 +487,14 @@ if mode == "Delta movie":
                     f"Selecting the clearest readable image for each of "
                     f"{len(scene_groups)} time periods from {len(scene_data)} acquisitions…"
                 )
-                frames, failures = cached_movie(grouped_scene_data, bbox)
+                status.write(
+                    "Reading higher-detail Sentinel-2 COGs…"
+                    if image_quality == "high"
+                    else "Reading fast Sentinel-2 previews…"
+                )
+                frames, failures = cached_movie(
+                    grouped_scene_data, bbox, image_quality
+                )
                 if not frames:
                     incomplete_count = sum(
                         "black or incomplete" in failure.lower()
@@ -456,6 +516,7 @@ if mode == "Delta movie":
                     "catalogue_count": len(scene_data),
                     "time_bucket_count": len(scene_groups),
                     "time_step": time_step,
+                    "image_quality": image_quality,
                     "failures": failures,
                     "zone": confirmed_zone,
                 }
@@ -491,6 +552,7 @@ if mode == "Delta movie":
         movie_slot.caption(
             f"{len(frames)} frames · {movie_meta['start']} → {movie_meta['end']} · "
             f"{time_step_label(movie_meta['time_step'])} · "
+            f"{image_quality_label(movie_meta['image_quality'])} · "
             f"exact area {movie_meta['zone']['width_km']} × "
             f"{movie_meta['zone']['width_km']} km"
         )

@@ -30,6 +30,17 @@ _MAP_CSS = """
   height: 100%;
   background: #dce8e5;
 }
+.satellite-center-marker {
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 !important;
+  border: 3px solid #0d5e4d;
+  border-radius: 50%;
+  background: #4fc3a1;
+  box-shadow: 0 1px 7px rgba(0, 0, 0, 0.45);
+  cursor: grab;
+}
+.satellite-center-marker.leaflet-marker-dragging { cursor: grabbing; }
 .map-hint {
   position: absolute;
   z-index: 1000;
@@ -74,6 +85,15 @@ function changed(a, b) {
   return !a || Math.abs(a.lat - b.lat) > 1e-7 || Math.abs(a.lng - b.lng) > 1e-7
 }
 
+function shiftedBounds(bounds, latlng) {
+  const halfLat = Math.abs(Number(bounds[1][0]) - Number(bounds[0][0])) / 2
+  const halfLng = Math.abs(Number(bounds[1][1]) - Number(bounds[0][1])) / 2
+  return [
+    [latlng.lat - halfLat, latlng.lng - halfLng],
+    [latlng.lat + halfLat, latlng.lng + halfLng],
+  ]
+}
+
 export default async function(component) {
   const { data, parentElement, setStateValue, setTriggerValue } = component
   const L = await ensureLeaflet()
@@ -114,12 +134,16 @@ export default async function(component) {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(map)
-    const marker = L.circleMarker([selection.lat, selection.lng], {
-      radius: 7,
-      color: '#0d5e4d',
-      weight: 3,
-      fillColor: '#4fc3a1',
-      fillOpacity: 1,
+    const markerIcon = L.divIcon({
+      className: 'satellite-center-marker',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+    })
+    const marker = L.marker([selection.lat, selection.lng], {
+      icon: markerIcon,
+      draggable: interactive,
+      keyboard: interactive,
+      title: interactive ? 'Drag to move the centre' : 'Selected centre',
     }).addTo(map)
     const rectangle = L.rectangle(data.bounds, {
       color: '#0d5e4d',
@@ -134,22 +158,30 @@ export default async function(component) {
       rectangle,
       selection,
       interactive,
+      dataBounds: data.bounds,
       boundsSignature: JSON.stringify(data.bounds),
     }
     mapInstances.set(parentElement, state)
 
     if (interactive) {
-      map.on('click', event => {
+      const emitPicked = latlng => {
         const picked = {
-          lat: Number(event.latlng.lat.toFixed(6)),
-          lng: Number(event.latlng.lng.toFixed(6)),
+          lat: Number(latlng.lat.toFixed(6)),
+          lng: Number(latlng.lng.toFixed(6)),
           zoom: map.getZoom(),
         }
         state.selection = picked
         marker.setLatLng([picked.lat, picked.lng])
         setStateValue('selection', picked)
         setTriggerValue('picked', picked)
+      }
+      map.on('click', event => emitPicked(event.latlng))
+      marker.on('drag', event => {
+        state.rectangle.setBounds(
+          shiftedBounds(state.dataBounds, event.target.getLatLng())
+        )
       })
+      marker.on('dragend', event => emitPicked(event.target.getLatLng()))
     }
     setTimeout(() => {
       map.invalidateSize()
@@ -165,6 +197,7 @@ export default async function(component) {
     state.map.panTo([selection.lat, selection.lng], { animate: false })
   }
   state.rectangle.setBounds(data.bounds)
+  state.dataBounds = data.bounds
   const boundsSignature = JSON.stringify(data.bounds)
   const boundsChanged = state.boundsSignature !== boundsSignature
   state.boundsSignature = boundsSignature
@@ -197,7 +230,7 @@ def location_picker(
     height: int = 460,
     interactive: bool = True,
     fit_bounds: bool = False,
-    hint: str = "Click the map to move the observation area.",
+    hint: str = "Click the map or drag the green point to move the area.",
     on_selection_change: Callable[[], None] | None = None,
 ):
     """Mount the map and return a result containing ``selection`` and ``picked``."""

@@ -25,7 +25,7 @@ Before building the movie, choose its time step: every acquisition, weekly, mont
 
 The Delta view is designed as a single-screen workspace: the full movie and playback controls remain together on the left without an internal scrollbar, while a compact world map and build settings stay visible on the right. The catalogue contains 30 deltas, grouped into river-, wave- and tide-dominated examples.
 
-Before any catalogue search or image download, the app asks for explicit confirmation of the exact centre, width and WGS84 bounding box. The selectable square can range up to 500 km for very large deltas. Blank, black or partially uncovered crops are rejected automatically and never enter the movie.
+Before any catalogue search or image download, the app asks for explicit confirmation of the exact centre, width and WGS84 bounding box. Click anywhere on the selection map or drag the green centre point; the acquisition rectangle follows the marker while it moves. The selectable square can range up to 500 km for very large deltas. Blank, black or partially uncovered crops are rejected automatically and never enter the movie.
 
 When several Sentinel-2 tiles from the same acquisition intersect the selected square, their previews are mosaicked before validation. The curated Orinoco preset is positioned inside a stable tile because its former centre sat directly on the 20PPQ/20PQQ boundary.
 
@@ -33,7 +33,7 @@ Available time spans are 6 months, 1 year, 2 years, 5 years, 10 years, or the co
 
 The three labels are simplified dominant-process categories for visual exploration, following the river–wave–tide framework. Real deltas occupy a continuum and their dominant forcing can vary through time and across the delta. See [Broaddus et al. (2022)](https://doi.org/10.1029/2022GL100355) and [Vulis et al. (2023)](https://doi.org/10.1029/2022GL102684) for quantitative treatments of this framework.
 
-The movie uses the small georeferenced Sentinel-2 preview for fast loading. It is intended to reveal large changes in water, sediment, vegetation, ice and coastline—not fine details. Frames are observations, not interpolated animation.
+High-detail mode reads the public Sentinel-2 true-colour COG source and renders 1800 × 1800 pixel frames; fast-preview mode uses the smaller georeferenced overview asset. Sentinel-2 colour bands have a native ground sampling distance of 10 m, but a large selected area must still be resampled into the fixed movie frame. It is intended to reveal changes in water, sediment, vegetation, ice and coastline rather than the sub-metre detail available from aerial imagery. Frames are observations, not interpolated animation.
 
 ## Anywhere on Earth
 
