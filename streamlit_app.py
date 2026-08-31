@@ -7,7 +7,6 @@ from datetime import timedelta
 import hashlib
 import importlib
 
-import pandas as pd
 import streamlit as st
 
 from deltas import (
@@ -37,7 +36,6 @@ from satellite import (
     Scene,
     bbox_from_point,
     group_scenes_by_time_step,
-    load_scene_png,
     search_scenes,
     utc_today,
 )
@@ -70,11 +68,6 @@ def cached_search(bbox, start_date, end_date, cloud_limit):
 @st.cache_data(ttl="24h", max_entries=100, show_spinner=False)
 def cached_place_search(query: str):
     return search_places(query)
-
-
-@st.cache_data(max_entries=80, show_spinner=False)
-def cached_image(scene_data, bbox, output_size=HIGH_DETAIL_OUTPUT_SIZE):
-    return load_scene_png(Scene.from_dict(scene_data), tuple(bbox), output_size)
 
 
 @st.cache_data(max_entries=8, show_spinner=False)
@@ -167,9 +160,8 @@ def image_quality_label(image_quality: str) -> str:
 
 
 def reset_free_explorer() -> None:
-    st.session_state.free_scenes = []
-    st.session_state.free_search_bbox = None
-    st.session_state.pop("timeline_index", None)
+    st.session_state.free_movie_frames = []
+    st.session_state.free_movie_meta = None
 
 
 def use_place_result(index: int) -> None:
@@ -181,7 +173,7 @@ def use_place_result(index: int) -> None:
     st.session_state.location = {
         "lat": round(float(place["latitude"]), 6),
         "lng": round(float(place["longitude"]), 6),
-        "zoom": 9,
+        "zoom": 12,
     }
     st.session_state.selected_place_label = place["label"]
     reset_free_explorer()
@@ -320,10 +312,8 @@ def confirm_delta_area(
 
 
 st.session_state.setdefault("location", {"lat": 48.8566, "lng": 2.3522, "zoom": 7})
-st.session_state.setdefault("free_scenes", [])
-st.session_state.setdefault("free_search_bbox", None)
-st.session_state.setdefault("free_search_label", None)
-st.session_state.setdefault("free_search_options", None)
+st.session_state.setdefault("free_movie_frames", [])
+st.session_state.setdefault("free_movie_meta", None)
 st.session_state.setdefault("movie_frames", [])
 st.session_state.setdefault("movie_meta", None)
 st.session_state.setdefault("confirmed_delta_zone", None)
@@ -681,14 +671,14 @@ with st.sidebar:
     st.header("Area and period", anchor=False)
     width_km = st.slider(
         "Area width",
-        1,
-        MAX_AREA_WIDTH_KM,
-        5,
-        1,
-        format="%d km",
+        0.5,
+        float(MAX_AREA_WIDTH_KM),
+        2.0,
+        0.5,
+        format="%.1f km",
         help=(
-            "The image is a square centred on the marker. Large areas require "
-            "more tiles and may take longer to load."
+            "Use 0.5 to 2 km for the closest useful view. Sentinel-2 native "
+            "resolution remains 10 m; larger areas require more tiles."
         ),
     )
     history = st.selectbox(
@@ -696,6 +686,24 @@ with st.sidebar:
         options=PERIOD_OPTIONS,
         index=1,
         format_func=period_label,
+    )
+    time_step = st.selectbox(
+        "Movie time step",
+        options=MOVIE_TIME_STEPS,
+        index=MOVIE_TIME_STEPS.index("month"),
+        format_func=time_step_label,
+        help=(
+            "The movie keeps the clearest readable image in each selected "
+            "time interval."
+        ),
+    )
+    image_quality = st.segmented_control(
+        "Image quality",
+        options=IMAGE_QUALITY_OPTIONS,
+        default="high",
+        required=True,
+        format_func=image_quality_label,
+        width="stretch",
     )
     cloud_limit = st.slider(
         "Maximum catalogue cloud",
@@ -705,20 +713,12 @@ with st.sidebar:
         5,
         format="%d %%",
     )
-    load_clicked = st.button(
-        "Load images for this area",
+    build_movie_clicked = st.button(
+        "Create satellite movie",
         type="primary",
-        icon=":material/travel_explore:",
+        icon=":material/movie:",
         width="stretch",
     )
-
-current_options = [width_km, history, cloud_limit]
-if (
-    st.session_state.free_scenes
-    and st.session_state.free_search_options is not None
-    and st.session_state.free_search_options != current_options
-):
-    reset_free_explorer()
 
 location = st.session_state.location
 bbox = bbox_from_point(location["lat"], location["lng"], width_km)
@@ -753,81 +753,120 @@ if picked:
 with st.container(horizontal=True):
     st.metric("Latitude", f"{location['lat']:.5f}", border=True)
     st.metric("Longitude", f"{location['lng']:.5f}", border=True)
-    st.metric("Area", f"{width_km} × {width_km} km", border=True)
+    st.metric("Area", f"{width_km:g} × {width_km:g} km", border=True)
 
 result_slot = st.container()
-if load_clicked:
+request_signature = [
+    round(location["lat"], 6),
+    round(location["lng"], 6),
+    width_km,
+    history,
+    cloud_limit,
+    time_step,
+    image_quality,
+]
+free_movie_meta = st.session_state.free_movie_meta
+if free_movie_meta and free_movie_meta["request"] != request_signature:
+    reset_free_explorer()
+    free_movie_meta = None
+
+if build_movie_clicked:
     end_date = utc_today()
     start_date = period_start(history, end_date)
+    build_status = None
     try:
-        with st.status("Searching Sentinel-2 acquisitions…", expanded=True) as status:
+        with result_slot.status(
+            "Building the satellite movie…", expanded=True
+        ) as status:
+            build_status = status
+            status.write("Searching Sentinel-2 acquisitions…")
             scene_data = cached_search(bbox, start_date, end_date, cloud_limit)
-            st.session_state.free_scenes = scene_data
-            st.session_state.free_search_bbox = list(bbox)
-            st.session_state.free_search_options = current_options
-            st.session_state.free_search_label = (
-                f"{start_date:%d/%m/%Y} → {end_date:%d/%m/%Y} · cloud ≤ {cloud_limit}%"
+            if not scene_data:
+                raise SatelliteError(
+                    "No Sentinel-2 acquisitions match this period and cloud threshold."
+                )
+            scenes = [Scene.from_dict(item) for item in scene_data]
+            scene_groups = group_scenes_by_time_step(scenes, time_step)
+            grouped_scene_data = [
+                [scene.to_dict() for scene in candidates]
+                for candidates in scene_groups
+            ]
+            status.write(
+                f"Selecting frames for {len(scene_groups)} time periods from "
+                f"{len(scene_data)} acquisitions…"
             )
-            st.session_state.pop("timeline_index", None)
+            status.write(
+                "Reading higher-detail Sentinel-2 COGs…"
+                if image_quality == "high"
+                else "Reading fast Sentinel-2 previews…"
+            )
+            frames, failures = cached_movie(
+                grouped_scene_data, bbox, image_quality
+            )
+            if not frames:
+                raise SatelliteError("None of the matching images could be read.")
+            st.session_state.free_movie_frames = frames
+            st.session_state.free_movie_meta = {
+                "request": request_signature,
+                "start": start_date.isoformat(),
+                "end": end_date.isoformat(),
+                "catalogue_count": len(scene_data),
+                "time_bucket_count": len(scene_groups),
+                "time_step": time_step,
+                "image_quality": image_quality,
+                "failures": failures,
+                "width_km": width_km,
+            }
+            free_movie_meta = st.session_state.free_movie_meta
             status.update(
-                label=f"{len(scene_data)} acquisition(s) found",
+                label=f"Movie ready · {len(frames)} frames",
                 state="complete",
                 expanded=False,
             )
     except SatelliteError as exc:
+        if build_status is not None:
+            build_status.update(
+                label="Movie could not be built",
+                state="error",
+                expanded=False,
+            )
         result_slot.error(str(exc), icon=":material/error:")
 
-scene_data = st.session_state.free_scenes
-if not scene_data:
+frames = st.session_state.free_movie_frames
+if not free_movie_meta or not frames:
     with result_slot.container(border=True):
-        st.subheader("Ready to explore", anchor=False)
+        st.subheader("Ready to create a movie", anchor=False)
         st.write(
-            "Click the map, adjust the area size and use **Load images for this area**."
+            "Choose the exact place and area size, then use **Create satellite movie**."
         )
     st.stop()
 
-scenes = [Scene.from_dict(item) for item in scene_data]
-search_bbox = tuple(st.session_state.free_search_bbox)
-latest = scenes[-1]
-result_slot.subheader("Available images", anchor=False)
+result_slot.subheader("Satellite movie", anchor=False)
 result_slot.caption(
-    f"{len(scenes)} acquisitions · {st.session_state.free_search_label} · "
-    f"latest image {latest.datetime:%d/%m/%Y}"
+    f"{len(frames)} frames · {free_movie_meta['start']} → "
+    f"{free_movie_meta['end']} · "
+    f"{time_step_label(free_movie_meta['time_step'])} · "
+    f"{image_quality_label(free_movie_meta['image_quality'])} · "
+    f"{free_movie_meta['width_km']:g} × {free_movie_meta['width_km']:g} km"
 )
-
-indices = list(range(len(scenes)))
-selected_index = result_slot.select_slider(
-    "Timeline",
-    options=indices,
-    value=indices[-1],
-    format_func=lambda index: (
-        f"{scenes[index].datetime:%d/%m/%Y} · {scenes[index].cloud_cover:.0f}%"
-    ),
-    key="timeline_index",
+movie_id = hashlib.sha256(
+    "|".join(map(str, free_movie_meta["request"])).encode()
+).hexdigest()[:12]
+with result_slot:
+    satellite_movie(
+        frames,
+        movie_id=movie_id,
+        key=f"free-movie-{movie_id}",
+    )
+failed_count = len(free_movie_meta["failures"])
+missing_periods = free_movie_meta["time_bucket_count"] - len(frames)
+if failed_count or missing_periods:
+    result_slot.warning(
+        f"{failed_count} candidate images were rejected and {missing_periods} "
+        "time periods have no readable frame.",
+        icon=":material/broken_image:",
+    )
+result_slot.caption(
+    "Use Play to animate the real acquisitions. Zoom up to 16× with the mouse "
+    "wheel or + button; Sentinel-2 native detail remains 10 m."
 )
-selected = scenes[selected_index]
-with result_slot.container(horizontal=True):
-    st.metric("Date", f"{selected.datetime:%d/%m/%Y}", border=True)
-    st.metric("UTC time", f"{selected.datetime:%H:%M}", border=True)
-    st.metric("Catalogue cloud", f"{selected.cloud_cover:.1f}%", border=True)
-    st.metric("Series position", f"{selected_index + 1} / {len(scenes)}", border=True)
-
-try:
-    with result_slot.skeleton():
-        image = cached_image(selected.to_dict(), search_bbox)
-        single_frame = encode_frame(
-            image,
-            selected.datetime.strftime("%d %b %Y · %H:%M UTC"),
-            selected.cloud_cover,
-        )
-        image_id = hashlib.sha256(
-            f"{selected.id}:{search_bbox}".encode()
-        ).hexdigest()[:12]
-        with result_slot:
-            satellite_movie(
-                [single_frame],
-                movie_id=image_id,
-                key=f"single-image-{image_id}",
-            )
-except SatelliteError as exc:
-    result_slot.error(str(exc), icon=":material/broken_image:")

@@ -51,7 +51,7 @@ _PLAYER_HTML = """
       <input id="scrubber" type="range" min="0" value="0" step="1" aria-label="Timeline" />
       <div class="range-labels"><span id="first-date"></span><span id="last-date"></span></div>
     </div>
-    <div class="interaction-help">Mouse wheel or +/− to zoom · drag the image to move · double-click to reset</div>
+    <div class="interaction-help">Mouse wheel or +/− to zoom up to 16× · drag the image to move · double-click to reset</div>
   </div>
 </section>
 """
@@ -274,7 +274,7 @@ export default function(component) {
   }
 
   function setZoom(nextScale, focusX = 0, focusY = 0) {
-    const bounded = Math.max(1, Math.min(8, nextScale))
+    const bounded = Math.max(1, Math.min(16, nextScale))
     const ratio = bounded / state.scale
     state.x = focusX * (1 - ratio) + state.x * ratio
     state.y = focusY * (1 - ratio) + state.y * ratio

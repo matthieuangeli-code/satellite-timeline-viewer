@@ -20,3 +20,4 @@ def test_player_supports_pan_zoom_fit_and_responsive_height():
     assert "stage.onpointermove" in _PLAYER_JS
     assert "function resetView()" in _PLAYER_JS
     assert "requestFullscreen" in _PLAYER_JS
+    assert "Math.min(16, nextScale)" in _PLAYER_JS
