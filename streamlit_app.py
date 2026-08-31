@@ -17,6 +17,7 @@ from deltas import (
     deltas_by_type,
     type_counts,
 )
+from geocoding import GeocodingError, search_places
 from map_picker import location_picker
 from movie_player import encode_frame, satellite_movie
 
@@ -55,6 +56,7 @@ IMAGE_QUALITY_LABELS = {
 }
 HIGH_DETAIL_OUTPUT_SIZE = 1800
 PREVIEW_OUTPUT_SIZE = 1000
+EXPLORER_MODES = ("Choose on map", "Search a place", "River deltas")
 
 
 @st.cache_data(ttl="30m", max_entries=40, show_spinner=False)
@@ -63,6 +65,11 @@ def cached_search(bbox, start_date, end_date, cloud_limit):
         scene.to_dict()
         for scene in search_scenes(tuple(bbox), start_date, end_date, cloud_limit)
     ]
+
+
+@st.cache_data(ttl="24h", max_entries=100, show_spinner=False)
+def cached_place_search(query: str):
+    return search_places(query)
 
 
 @st.cache_data(max_entries=80, show_spinner=False)
@@ -163,6 +170,21 @@ def reset_free_explorer() -> None:
     st.session_state.free_scenes = []
     st.session_state.free_search_bbox = None
     st.session_state.pop("timeline_index", None)
+
+
+def use_place_result(index: int) -> None:
+    """Centre the free explorer on one geocoding result."""
+    results = st.session_state.get("place_results", [])
+    if not 0 <= index < len(results):
+        return
+    place = results[index]
+    st.session_state.location = {
+        "lat": round(float(place["latitude"]), 6),
+        "lng": round(float(place["longitude"]), 6),
+        "zoom": 9,
+    }
+    st.session_state.selected_place_label = place["label"]
+    reset_free_explorer()
 
 
 def sync_pending_delta_from_map(map_key: str) -> None:
@@ -306,21 +328,27 @@ st.session_state.setdefault("movie_frames", [])
 st.session_state.setdefault("movie_meta", None)
 st.session_state.setdefault("confirmed_delta_zone", None)
 st.session_state.setdefault("delta_acquisition_request", None)
+st.session_state.setdefault("place_results", [])
+st.session_state.setdefault("selected_place_label", None)
 
 st.title("Satellite Timeline")
-st.caption("Explore how coastlines, wetlands and river channels change through time.")
+st.caption("Explore visible changes anywhere on Earth with public Sentinel-2 images.")
 st.markdown(
     ":green-badge[No API key] :blue-badge[Sentinel-2 L2A] "
     ":gray-badge[Natural colour · 10 m]"
 )
 
 mode = st.segmented_control(
-    "Explorer mode",
-    ["Delta movie", "Anywhere on Earth"],
-    default="Delta movie",
+    "How do you want to choose the place?",
+    EXPLORER_MODES,
+    default="Choose on map",
+    required=True,
+    key="explorer_mode",
+    persist_state="session",
+    width="stretch",
 )
 
-if mode == "Delta movie":
+if mode == "River deltas":
     player_column, context_column = st.columns(
         [3.45, 1.0], gap="medium", vertical_alignment="top"
     )
@@ -589,6 +617,66 @@ if mode == "Delta movie":
     st.stop()
 
 
+if mode == "Search a place":
+    st.subheader("Search for a place", anchor=False)
+    st.caption(
+        "Enter a city, region, landmark or country. You can fine-tune the exact "
+        "observation area on the map after choosing a result."
+    )
+    with st.form("place-search-form", border=False):
+        with st.container(horizontal=True, vertical_alignment="bottom"):
+            place_query = st.text_input(
+                "Place name",
+                placeholder="For example: Kathmandu, Nepal",
+                key="place_query",
+                persist_state="session",
+            )
+            place_search_clicked = st.form_submit_button(
+                "Find place",
+                type="primary",
+                icon=":material/search:",
+            )
+
+    if place_search_clicked:
+        try:
+            with st.spinner("Searching for matching places..."):
+                place_results = cached_place_search(place_query)
+            st.session_state.place_results = place_results
+            if place_results:
+                st.session_state.place_result_index = 0
+                use_place_result(0)
+            else:
+                st.warning(
+                    "No matching place was found. Try adding a country or region.",
+                    icon=":material/location_off:",
+                )
+        except GeocodingError as exc:
+            st.error(str(exc), icon=":material/error:")
+
+    place_results = st.session_state.place_results
+    if place_results:
+        selected_place_index = st.selectbox(
+            "Matching places",
+            options=range(len(place_results)),
+            format_func=lambda index: place_results[index]["label"],
+            key="place_result_index",
+        )
+        selected_place = place_results[selected_place_index]
+        if selected_place["label"] != st.session_state.selected_place_label:
+            use_place_result(selected_place_index)
+            st.rerun()
+        st.success(
+            f"Observation area centred on **{selected_place['label']}**.",
+            icon=":material/location_on:",
+        )
+else:
+    st.subheader("Choose a location on the map", anchor=False)
+    st.caption(
+        "Click anywhere on the map or drag the green point to set the centre of "
+        "the observation area."
+    )
+
+
 with st.sidebar:
     st.header("Area and period", anchor=False)
     width_km = st.slider(
@@ -634,12 +722,18 @@ if (
 
 location = st.session_state.location
 bbox = bbox_from_point(location["lat"], location["lng"], width_km)
+map_key = "place-search-map" if mode == "Search a place" else "world-map"
 map_result = location_picker(
     location["lat"],
     location["lng"],
     bbox,
-    key="world-map",
+    key=map_key,
     zoom=int(location.get("zoom", 7)),
+    hint=(
+        "Fine-tune the searched place by clicking or dragging the green point."
+        if mode == "Search a place"
+        else "Click the map or drag the green point to move the area."
+    ),
 )
 picked = getattr(map_result, "selection", None)
 if picked:
