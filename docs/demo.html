@@ -128,7 +128,7 @@ function init(){
    if(outlineCurrent){mapCurrent.removeLayer(outlineCurrent);outlineCurrent=null}
    $("parcel").textContent="Recherche en cours";
    await queryParcel(point.lng,point.lat);
-   if(!$("status").classList.contains("failed"))state("Parcelle candidate affichée. Vérifiez sa correspondance.");
+   state(outline?"Parcelle candidate affichée. Vérifiez sa correspondance.":"Aucune parcelle à ce point ou service indisponible. Cliquez sur un terrain voisin pour réessayer.",!outline);
  });
  split();setTimeout(()=>{map.invalidateSize();mapCurrent.invalidateSize();},100);return true;
 }
