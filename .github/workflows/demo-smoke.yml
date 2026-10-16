@@ -1,0 +1,25 @@
+name: Validate SiteHistory demo in browser
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/demo-smoke.yml"
+      - "scripts/smoke-sitehistory.mjs"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Check public SiteHistory demo in real browser
+        run: node scripts/smoke-sitehistory.mjs
