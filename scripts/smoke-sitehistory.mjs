@@ -22,6 +22,7 @@ try {
   await page.locator("#compare").fill("75");
   const divider = await page.locator("#divider").evaluate(el => el.style.left);
   if(divider !== "75%") throw new Error("Slider update failed: " + divider);
+  await page.waitForFunction(() => document.querySelectorAll(".leaflet-tile-loaded").length > 0, { timeout: 35000 });
   const tileStatus = await page.evaluate(() => ({
     tileCount:document.querySelectorAll(".leaflet-tile-loaded").length,
     parcel:document.querySelector("#parcel")?.textContent,
