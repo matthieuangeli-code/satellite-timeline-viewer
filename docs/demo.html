@@ -122,14 +122,27 @@ async function getJson(url){
 }
 async function queryParcel(lon,lat){
  const url="https://apicarto.ign.fr/api/cadastre/parcelle?"+new URLSearchParams({geom:JSON.stringify({type:"Point",coordinates:[lon,lat]})});
- let candidates=[];
- try{candidates=(await getJson(url)).features||[]}catch(e){$("parcel-note").textContent="Service cadastral indisponible actuellement : "+e.message;return}
+ let candidates=[];let near=false;
+ try{candidates=(await getJson(url)).features||[]}catch(e){$("parcel-note").textContent="Service cadastral indisponible actuellement : "+e.message;$("parcel").textContent="Non disponible";return}
+ if(!candidates.length){
+   try{
+     const q=new URLSearchParams({lon:String(lon),lat:String(lat),index:"parcel",limit:"5"});
+     const nearby=(await getJson("https://data.geopf.fr/geocodage/reverse?"+q)).features||[];
+     for(const proposed of nearby.slice(0,3)){
+       const c=proposed.geometry?.coordinates;
+       if(!Array.isArray(c)||c.length<2)continue;
+       const u="https://apicarto.ign.fr/api/cadastre/parcelle?"+new URLSearchParams({geom:JSON.stringify({type:"Point",coordinates:[c[0],c[1]]})});
+       candidates=(await getJson(u)).features||[];
+       if(candidates.length){near=true;break}
+     }
+   }catch(e){$("parcel-note").textContent="Recherche de parcelle proche indisponible : "+e.message}
+ }
  if(candidates.length){
    const f=candidates[0];const p=f.properties||{};
    outline=L.geoJSON(f,{style:{color:"#f4c344",weight:4,fillOpacity:0.07,fillColor:"#f4c344"}}).addTo(map);
    const bounds=outline.getBounds();if(bounds.isValid())map.fitBounds(bounds.pad(1.1),{maxZoom:18});
    $("parcel").textContent=[p.id||p.identifiant||f.id||"",p.section?"section "+p.section:"",p.numero?"n° "+p.numero:""].filter(Boolean).join(" · ")||"Polygone affiché (identifiant indisponible)";
-   $("parcel-note").textContent="Parcelle retrouvée au point d'adresse. Confirmez visuellement qu'elle correspond à la propriété recherchée.";
+   $("parcel-note").textContent=near?"Parcelle PROCHE proposée : sélection provisoire (point d’adresse sur la route possible). À confirmer visuellement ; aucun lien juridique avec l’adresse n’est établi.":"Parcelle au point d’adresse : confirmez visuellement qu’elle correspond à la propriété recherchée.";
  }else{
    $("parcel").textContent="Aucune parcelle à ce point précis";
    $("parcel-note").textContent="Le géocodeur peut placer l'adresse sur la route. Zoomez pour vérifier le terrain ou recherchez une autre adresse.";
