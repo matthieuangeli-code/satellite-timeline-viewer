@@ -3,177 +3,199 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SiteHistory France — l'histoire d'une parcelle, au même endroit</title>
-<meta name="description" content="Explorez l'historique aérien d'une parcelle en France et les principales données publiques de risques, dans un dossier exportable.">
-<meta name="theme-color" content="#0b2328">
-<meta property="og:title" content="SiteHistory France — Remontez l'histoire d'un terrain">
-<meta property="og:description" content="Images IGN, cadastre et indices Géorisques réunis dans un dossier clair.">
+<title>SiteHistory France — Chaque parcelle a une histoire</title>
+<meta name="description" content="L'histoire aérienne, les références cadastrales et le contexte environnemental d'une parcelle française, réunis dans un dossier exploratoire.">
+<meta name="theme-color" content="#173e35">
+<meta property="og:title" content="SiteHistory France — Chaque parcelle a une histoire">
+<meta property="og:description" content="Explorez les archives aériennes et les informations publiques sur votre terrain.">
 <style>
-:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:#173337;background:#f6f7f3;scroll-behavior:smooth}
-*{box-sizing:border-box}body{margin:0}a{color:inherit}button{font:inherit;cursor:pointer}
-.wrap{width:min(1140px,calc(100% - 44px));margin:auto}
-.top{height:76px;display:flex;align-items:center;justify-content:space-between}
-.brand{font-weight:850;font-size:21px;letter-spacing:-.85px;text-decoration:none;display:flex;align-items:center;gap:10px}
-.mark{width:30px;height:30px;border-radius:9px;background:#a9e3ba;display:grid;place-items:center;color:#123b35}
-nav{display:flex;align-items:center;gap:26px;font-size:14px;color:#45615e}nav a{text-decoration:none}nav a:hover{color:#173337}
-.btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border-radius:12px;padding:15px 22px;font-weight:750;font-size:14px;transition:transform .15s,background .15s;gap:8px;border:0}
-.btn:hover{transform:translateY(-2px)}.btn.primary{background:#123e38;color:#fff}.btn.primary:hover{background:#0b2f2a}
-.btn.light{background:#eef2eb;color:#20483d}.btn.outline{border:1px solid #bfd0c7;background:transparent}
-.hero{background:#0b252a;color:#e8f4ed;position:relative;overflow:hidden}
-.hero:before{content:"";position:absolute;inset:-130px -180px auto auto;width:640px;height:640px;border-radius:50%;background:radial-gradient(circle,#235e54 0%,transparent 70%);opacity:.6;pointer-events:none}
-.hero-inner{padding:94px 0 110px;display:grid;grid-template-columns:1.12fr .88fr;align-items:center;gap:55px}
-.eyebrow{text-transform:uppercase;font-size:12px;font-weight:800;letter-spacing:.17em;color:#96d4aa;margin:0 0 16px}
-h1,h2,h3,p{margin-top:0}h1{font-size:clamp(38px,5.1vw,68px);letter-spacing:-2.5px;line-height:1.04;margin-bottom:24px}
-h2{font-size:clamp(29px,3.4vw,44px);line-height:1.15;letter-spacing:-1.6px;margin-bottom:15px}
-.sub{font-size:18px;line-height:1.65;color:#b7d2c8;max-width:580px}
-.hero-actions{display:flex;gap:12px;flex-wrap:wrap;margin:29px 0}
-.mini{font-size:12px;color:#9fc0b5}
-.map{position:relative;aspect-ratio:1.03;border:1px solid #6e9890;border-radius:20px;overflow:hidden;transform:rotate(2deg);background:repeating-linear-gradient(40deg,#3b675f 0 33px,#4e7969 33px 36px,#25534f 36px 72px)}
-.map:before{content:"";position:absolute;inset:-30%;background:repeating-linear-gradient(-65deg,transparent 0 95px,#8fba9a 95px 105px,transparent 105px 159px,#3c4d45 159px 179px);opacity:.75;transform:rotate(10deg)}
-.map:after{content:"";position:absolute;left:28%;top:18%;width:45%;height:56%;border:3px solid #eaffc5;background:rgba(199,254,181,.12);clip-path:polygon(10% 5%,90% 0,100% 90%,30% 100%,0 55%)}
-.map-chip{position:absolute;z-index:2;left:17px;top:17px;border:1px solid #caead3;background:rgba(11,37,42,.86);padding:9px 11px;border-radius:8px;font-size:12px;font-weight:700}
-.map-bottom{position:absolute;bottom:16px;right:16px;z-index:2;background:#eef9e9;border-radius:10px;color:#123d37;padding:12px 15px;box-shadow:0 10px 25px #001a1f55}
-.map-bottom strong{display:block;font-size:21px}
-.section{padding:94px 0}.center{text-align:center;max-width:730px;margin:0 auto 43px}.muted{color:#5f7774;line-height:1.7}
-.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:17px}
-.tile{background:#fff;border:1px solid #e0e7de;border-radius:17px;padding:26px;box-shadow:0 12px 34px #1831280a}
-.number{display:grid;place-items:center;width:38px;height:38px;border-radius:11px;background:#e1f0e3;color:#245747;font-weight:850;margin-bottom:20px}
-.tile h3{font-size:19px;letter-spacing:-.5px;margin-bottom:10px}.tile p{font-size:14px;line-height:1.7;color:#59716b;margin:0}
-.split{display:grid;grid-template-columns:1fr 1fr;gap:62px;align-items:center}
-.board{background:#eff3eb;border-radius:22px;padding:25px;border:1px solid #d6e3d8}
-.board header{display:flex;justify-content:space-between;font-weight:800;font-size:14px;color:#25473e;padding-bottom:20px;border-bottom:1px solid #d1ded2}
-.timeline{display:flex;align-items:center;justify-content:space-between;margin:30px 0 24px;position:relative}
-.timeline:before{content:"";position:absolute;top:8px;left:16px;right:16px;background:#b4c6bd;height:2px}
-.timeline span{position:relative;background:#295c4f;height:17px;width:17px;border:4px solid #e4f4df;border-radius:50%;z-index:1}
-.samples{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.sample{height:170px;border-radius:12px;background:linear-gradient(32deg,#5a8765 12%,#97af83 12% 32%,#55776e 32% 47%,#c5c18c 47% 61%,#64805e 61%);position:relative;overflow:hidden}
-.sample.old{filter:grayscale(1) sepia(.23);background-size:60px 70px}
-.sample.new{background-size:46px 38px}
-.sample label{position:absolute;bottom:10px;left:10px;color:#fff;background:#143b35c9;border-radius:6px;padding:5px 9px;font-size:11px;font-weight:750}
-.points{padding:0;list-style:none;display:grid;gap:17px;margin:24px 0}
-.points li{display:flex;gap:12px;color:#385c53;font-size:15px;line-height:1.5}
-.points li:before{content:"✓";color:#168353;font-weight:900}
-.price-section{background:#e9f0e9}
-.pricing{max-width:700px;margin:30px auto 0;background:#fff;border:1px solid #cddfd0;border-radius:22px;padding:38px;box-shadow:0 12px 50px #1b523011}
-.price{font-size:62px;font-weight:850;letter-spacing:-2px;margin:15px 0 5px}.price small{font-size:16px;font-weight:500;color:#6b827a;letter-spacing:0}
-.stat{display:inline-block;padding:6px 10px;border-radius:25px;background:#edf4eb;color:#316a52;font-size:11px;font-weight:800;letter-spacing:.06em}
-.pricing p{color:#536c64;line-height:1.6}.pricing .btn{width:100%;margin:12px 0}
-.honesty{font-size:12px;color:#677e77;line-height:1.6}
-.other{display:grid;grid-template-columns:1fr 1fr;gap:17px}
-.other-item{background:white;border:1px solid #dde8de;border-radius:18px;padding:28px}
-.other-item h3{font-size:20px;letter-spacing:-.4px}
-.other-item .tag{display:inline-block;font-size:11px;color:#507465;font-weight:750;background:#e9f2e6;border-radius:6px;padding:5px 8px}
-.other-item p{color:#617772;font-size:14px;line-height:1.7;min-height:76px}
-.other-item a{color:#235a46;font-size:14px;font-weight:800}
-.foot{background:#0b252a;color:#b2ccc3;padding:35px 0;font-size:12px;line-height:1.7}
-.foot-inner{display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap}
-.foot a{color:#d3eadf}
-.notice{background:#dff0da;padding:13px 20px;text-align:center;color:#214f3e;font-size:13px;font-weight:600}
-@media(max-width:800px){.hero-inner,.split{grid-template-columns:1fr}.hero-inner{padding:65px 0 75px}.map{max-width:470px;margin:auto;width:100%}.trio{grid-template-columns:1fr}.other{grid-template-columns:1fr}nav{gap:12px}nav a:nth-child(2){display:none}h1{letter-spacing:-1.3px}.section{padding:65px 0}}
-@media(max-width:500px){.top{height:64px}.brand{font-size:17px}nav .btn{padding:10px 11px;font-size:12px}nav>a:not(.btn){display:none}.pricing{padding:23px}.price{font-size:51px}.samples .sample{height:115px}.hero-actions .btn{width:100%}}
+:root{--ink:#183c34;--forest:#173d34;--forest2:#0f302a;--sage:#6e8478;--mint:#ceeaaa;--paper:#f8f9f4;--line:#dfe6dc;--cream:#f0f4eb;--serif:Georgia,"Times New Roman",serif;font-family:Inter,"Segoe UI",system-ui,sans-serif;color:var(--ink)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);-webkit-font-smoothing:antialiased}
+a{color:inherit}button,input{font:inherit}a:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #76bb86;outline-offset:3px}
+.wrap{max-width:1190px;width:calc(100% - 52px);margin:auto}
+.nav{display:flex;align-items:center;justify-content:space-between;height:78px;gap:18px}.nav-shell{border-bottom:1px solid #e1e8de;background:#fbfcf8}
+.brand{display:flex;align-items:center;gap:11px;text-decoration:none;font-size:21px;letter-spacing:-1px;font-weight:820;white-space:nowrap}.brand b{font-weight:500;color:#7d9185}
+.mark{height:38px;width:38px;background:var(--forest);border-radius:11px;display:grid;place-items:center;color:var(--mint)}
+.navlinks{display:flex;align-items:center;gap:29px;font-size:13px;font-weight:650}.navlinks>a{text-decoration:none;color:#546e5e}.navlinks>a:hover{color:#244a3c}
+.pillbutton,.button{display:inline-flex;align-items:center;justify-content:center;gap:11px;text-decoration:none;border-radius:12px;font-size:14px;font-weight:750;transition:transform .15s,background .15s}.pillbutton:hover,.button:hover{transform:translateY(-2px)}
+.pillbutton{background:var(--forest);color:#fff!important;padding:13px 19px}
+.button{padding:17px 25px;border:1px solid transparent}.bright{background:var(--mint);color:#1c442e}.bright:hover{background:#e0f3bd}.line{color:#e8f4e9;border-color:#68877b;background:transparent}
+.hero{background:radial-gradient(circle at 92% 7%,#2c594a 0%,transparent 36%),linear-gradient(130deg,#102f2a,#173e35);color:#f5f8ee;overflow:hidden}
+.hero .wrap{display:grid;grid-template-columns:1.04fr .96fr;gap:73px;align-items:center;padding:94px 0 107px}
+.eyebrow{display:block;font-weight:820;letter-spacing:.15em;font-size:11px;color:#a9d9a9;text-transform:uppercase;margin:0 0 19px}
+h1,h2,h3,p{margin-top:0}h1,h2{font-family:var(--serif);font-weight:400;letter-spacing:-.045em}
+h1{font-size:clamp(50px,5.6vw,83px);line-height:1.07;margin-bottom:25px}h1 em{color:var(--mint);font-style:italic}
+.lede{max-width:555px;color:#c2d7cd;font-size:17px;line-height:1.78}
+.actions{display:flex;gap:13px;flex-wrap:wrap;margin-top:29px}
+.benefits{display:flex;gap:20px;flex-wrap:wrap;color:#bad3bf;font-size:12px;margin-top:40px}.benefits b{color:var(--mint);margin-right:5px}
+.viewer{background:#f4f6ed;border-radius:19px;overflow:hidden;border:7px solid rgba(253,255,246,.12);box-shadow:0 35px 80px #02161175;transform:rotate(1.4deg);color:#254e3c}
+.viewerhead{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;background:#f5f8f0;font-size:11px;font-weight:800}
+.dots{display:flex;gap:5px}.dots i{display:block;height:7px;width:7px;border-radius:50%;background:#c5d3c3}.dots i:first-child{background:#74a78b}
+.map{position:relative;overflow:hidden;aspect-ratio:1.12;background:#839b7a;isolation:isolate}
+.map svg{display:block;position:absolute;inset:0;width:100%;height:100%}
+.map .old{clip-path:inset(0 calc(100% - var(--split,50%)) 0 0);filter:grayscale(.85) sepia(.24);z-index:2}
+.splitline{position:absolute;z-index:3;left:var(--split,50%);top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 12px #17332b}
+.splitline:after{content:"↔";position:absolute;top:49%;left:50%;transform:translate(-50%,-50%);height:39px;width:39px;border:2px solid white;background:#e5f1d9;color:#24573c;display:grid;place-items:center;border-radius:50%;font-weight:850;font-size:20px}
+.mapbadge{position:absolute;z-index:4;top:13px;background:#15382ec9;color:#fff;border-radius:7px;padding:9px 12px;font-weight:850;letter-spacing:.05em;font-size:10px}
+.mapbadge.a{left:13px}.mapbadge.b{right:13px}
+.viewfoot{display:flex;justify-content:space-between;align-items:center;padding:15px 17px;font-size:11px;font-weight:750;color:#3b6550;gap:10px}
+.micro{font-size:11px;line-height:1.55;color:#b4c9b9;max-width:460px;margin:14px 3px 0}
+.band{background:#e6eee1;border-bottom:1px solid #d8e3d3}.band .wrap{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px 32px;padding:22px 0;color:#51715c;font-size:12px;font-weight:750}
+.section{padding:94px 0}.intro{text-align:center;max-width:760px;margin:0 auto 47px}.kicker{display:block;color:#5d906c;letter-spacing:.16em;font-size:11px;font-weight:850;text-transform:uppercase;margin-bottom:17px}
+h2{font-size:clamp(35px,4.1vw,56px);line-height:1.15;margin-bottom:17px}.intro>p{color:#6d8576;line-height:1.73;font-size:15px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.card{background:white;padding:30px;border:1px solid var(--line);border-radius:19px;min-height:250px;box-shadow:0 10px 40px #244c2d07}
+.symbol{height:51px;width:51px;display:grid;place-items:center;border-radius:14px;background:#e9f3df;color:#436e4c;font-size:23px;margin-bottom:26px}
+.card h3{font-size:18px;letter-spacing:-.4px;margin-bottom:12px}.card p{color:#6a8072;font-size:14px;line-height:1.75;margin:0}
+.light-section{background:#fff}.splitgrid{display:grid;grid-template-columns:.92fr 1.08fr;gap:74px;align-items:center}
+.explain p{color:#6b8072;font-size:15px;line-height:1.75}
+.checks{list-style:none;padding:0;margin:24px 0 0;display:grid;gap:17px}.checks li{display:flex;gap:13px;font-size:14px;font-weight:650;line-height:1.55;color:#44634f}.checks li:before{content:"✓";width:24px;height:24px;border-radius:50%;background:#e1f1d7;display:grid;place-items:center;color:#2b744d;flex-shrink:0}
+.interactive{border:1px solid #d8e5d7;background:#f4f7ef;border-radius:20px;padding:18px;box-shadow:0 20px 40px #29452b11}
+.interactive .map{aspect-ratio:1.47;border-radius:12px}
+.sliderlabel{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#4c715b;font-size:12px;font-weight:800;margin:19px 3px 9px}
+input[type=range]{display:block;width:100%;cursor:ew-resize;accent-color:#2c664b;margin:12px 0}
+.caption{font-size:11px;color:#819185;line-height:1.62;margin:12px 2px 0}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}.step{padding:10px 10px 0}.stepid{color:#8ba994;font-weight:800;font-size:13px;display:flex;align-items:center;gap:15px;margin-bottom:22px}.stepid:after{content:"";height:1px;background:#dce7da;flex:1}.step h3{font-size:19px}.step p{font-size:14px;line-height:1.75;color:#6a8273}
+.price-section{background:#e9f1e5}.pricegrid{display:grid;grid-template-columns:1fr 1fr;gap:77px;align-items:center}
+.pricecopy>p{color:#66806b;line-height:1.8;font-size:15px}.pricebox{background:#fff;border-radius:23px;padding:36px;border:1px solid #cddfc8;box-shadow:0 20px 70px #234f3014}
+.tag{background:#e7f4de;color:#42734e;border-radius:30px;display:inline-block;padding:9px 14px;font-size:10px;font-weight:850;letter-spacing:.13em}
+.amount{font-family:var(--serif);font-size:67px;letter-spacing:-.055em;margin:19px 0 7px}.amount small{font:500 14px Inter,system-ui;color:#788b7b;letter-spacing:0}
+.pricebox>p{font-size:14px;color:#697e70;line-height:1.7}.pricebox ul{list-style:none;padding:16px 0 8px;border-top:1px solid #e4ece0;margin:20px 0}
+.pricebox li{font-size:14px;padding:8px 0;font-weight:650;color:#41644e}.pricebox li:before{content:"✓";color:#348951;margin-right:11px}
+.pricebox .button{background:#173d34;color:#fff;width:100%}.pricebox .disclaimer{font-size:11px;color:#7b9080;margin:16px 0 0}
+.test{font-size:12px;line-height:1.6;border:1px solid #eed59c;background:#fff7e3;color:#7e5c26;border-radius:12px;padding:14px 16px;margin:20px 0 0}
+.faq{max-width:850px;margin:0 auto}.faq details{border-bottom:1px solid #dce7d9}.faq summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:20px;padding:22px 0;font-size:16px;font-weight:750}.faq summary::-webkit-details-marker{display:none}.faq summary:after{content:"+";color:#578360;font-size:23px;font-weight:400}.faq details[open] summary:after{content:"−"}.faq details p{color:#6d8373;font-size:14px;line-height:1.75;padding:0 0 22px;margin:0}
+.bottom{background:#183d34;color:#fff;padding:64px 0}.bottomgrid{display:flex;align-items:center;justify-content:space-between;gap:25px}.bottom h2{margin:0;font-size:clamp(30px,3.8vw,46px)}.bottom p{color:#bdd2c0;font-size:14px;margin:12px 0 0}
+footer{background:#102f29;color:#abc5b2;padding:33px 0;font-size:12px;line-height:1.7}.foot{display:flex;align-items:flex-start;justify-content:space-between;gap:30px;flex-wrap:wrap}.foot>div:first-child{max-width:600px}footer strong{color:#f6fff4}.footnav{display:flex;gap:17px;flex-wrap:wrap}.footnav a{text-decoration:none}.footnav a:hover{text-decoration:underline}
+@media(max-width:940px){.hero .wrap{gap:35px}.splitgrid,.pricegrid{gap:37px}.navlinks{gap:16px}}
+@media(max-width:750px){.wrap{width:calc(100% - 36px)}.nav{height:66px}.brand{font-size:18px}.navlinks a:not(.pillbutton){display:none}.pillbutton{padding:11px 12px;font-size:12px}
+.hero .wrap{grid-template-columns:1fr;padding:64px 0 72px;gap:44px}.hero h1{font-size:clamp(48px,10vw,69px)}.viewer{transform:none;max-width:550px}.benefits{gap:10px 19px}.section{padding:69px 0}.cards,.steps,.splitgrid,.pricegrid{grid-template-columns:1fr}.card{min-height:auto}.pricegrid{gap:29px}.pricebox{padding:25px}.steps{gap:13px}.step{padding:0}.bottomgrid{align-items:flex-start;flex-direction:column}.intro{margin-bottom:34px}}
+@media(max-width:405px){.brand b{display:none}.actions .button{width:100%}.amount{font-size:56px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.button,.pillbutton{transition:none}}
 </style>
 </head>
 <body>
-<div class="notice">Prototype commercial — le bouton Stripe est en mode test : aucun débit réel.</div>
-<header class="wrap top">
- <a class="brand" href="#haut"><span class="mark">◈</span> SiteHistory<span style="color:#6a8d7c;font-weight:500"> France</span></a>
- <nav><a href="#comment">Comment ça marche</a><a href="#outils">Autres outils</a><a class="btn primary" href="#tarif">Voir le tarif →</a></nav>
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden" xmlns="http://www.w3.org/2000/svg">
+<symbol id="land" viewBox="0 0 600 470">
+ <rect width="600" height="470" fill="#829f78"/>
+ <path d="M0 0H230L270 174 0 228Z" fill="#91af7b"/><path d="M330 0H600V208L434 188Z" fill="#6f9977"/>
+ <path d="M0 278 167 245 250 470H0Z" fill="#61866d"/><path d="M423 251 600 198V470H352Z" fill="#76977a"/>
+ <path d="M103 0 180 0 421 470 327 470Z" fill="#c5bfaa"/>
+ <path d="M-40 285 640 150" stroke="#d1c8b0" stroke-width="55"/><path d="M-40 285 640 150" stroke="#aab2a0" stroke-width="34"/>
+ <path d="M-40 285 640 150" stroke="#f8edcd" stroke-width="2" stroke-dasharray="15 12"/>
+ <g fill="#50765e" opacity=".85"><circle cx="60" cy="60" r="44"/><circle cx="110" cy="93" r="31"/><circle cx="535" cy="59" r="42"/><circle cx="568" cy="97" r="31"/><circle cx="36" cy="417" r="57"/><circle cx="521" cy="408" r="60"/></g>
+ <g fill="#9eb98a"><circle cx="53" cy="55" r="30"/><circle cx="536" cy="55" r="31"/><circle cx="521" cy="402" r="42"/></g>
+ <g fill="#e1dcc5"><rect x="56" y="116" width="78" height="58" transform="rotate(-14 56 116)"/><rect x="405" y="94" width="95" height="58" transform="rotate(-10 405 94)"/><rect x="402" y="299" width="92" height="70" transform="rotate(-10 402 299)"/><rect x="174" y="332" width="73" height="54" transform="rotate(-12 174 332)"/></g>
+ <g fill="#66796d"><rect x="49" y="109" width="78" height="58" transform="rotate(-14 49 109)"/><rect x="398" y="86" width="95" height="58" transform="rotate(-10 398 86)"/><rect x="395" y="291" width="92" height="70" transform="rotate(-10 395 291)"/><rect x="167" y="325" width="73" height="54" transform="rotate(-12 167 325)"/></g>
+ <path d="m264 73 153-31 57 144-164 33Z" fill="#e6f0b0" fill-opacity=".2" stroke="#effac9" stroke-width="4"/>
+ <g fill="none" stroke="#eef4d8" stroke-opacity=".6" stroke-dasharray="6 5" stroke-width="2"><path d="M29 47 169 21 202 182 0 222"/><path d="m282 52 128-26 75 165-170 42"/><path d="m355 261 159-32 54 203-174 28"/></g>
+ <path d="M342 110 405 96 417 154 352 170Z" fill="#ddcfaa"/><path d="M339 105 404 91 414 146 351 160Z" fill="#455d52"/>
+</symbol>
+<symbol id="land-old" viewBox="0 0 600 470">
+ <rect width="600" height="470" fill="#999e76"/>
+ <path d="M0 0H230L270 174 0 228Z" fill="#b4b38b"/><path d="M330 0H600V208L434 188Z" fill="#929c78"/>
+ <path d="M0 278 167 245 250 470H0Z" fill="#808c6b"/><path d="M423 251 600 198V470H352Z" fill="#a3a987"/>
+ <path d="M103 0 180 0 421 470 327 470Z" fill="#b6aa91"/>
+ <path d="M-40 285 640 150" stroke="#bfb397" stroke-width="53"/>
+ <g fill="#737d64" opacity=".85"><circle cx="60" cy="60" r="44"/><circle cx="110" cy="93" r="31"/><circle cx="535" cy="59" r="42"/><circle cx="568" cy="97" r="31"/><circle cx="36" cy="417" r="57"/><circle cx="521" cy="408" r="60"/></g>
+ <g fill="#d0c5a4"><rect x="56" y="116" width="78" height="58" transform="rotate(-14 56 116)"/><rect x="405" y="94" width="95" height="58" transform="rotate(-10 405 94)"/></g>
+ <g fill="#5d6d5f"><rect x="49" y="109" width="78" height="58" transform="rotate(-14 49 109)"/><rect x="398" y="86" width="95" height="58" transform="rotate(-10 398 86)"/></g>
+ <path d="m264 73 153-31 57 144-164 33Z" fill="#e6d5a7" fill-opacity=".17" stroke="#f1e4b9" stroke-width="4"/>
+ <g fill="none" stroke="#e8dbc5" stroke-opacity=".6" stroke-dasharray="6 5" stroke-width="2"><path d="M29 47 169 21 202 182 0 222"/><path d="m282 52 128-26 75 165-170 42"/></g>
+ <g fill="#6b8668" opacity=".9"><circle cx="344" cy="119" r="20"/><circle cx="390" cy="129" r="15"/><circle cx="364" cy="156" r="18"/></g>
+</symbol>
+</svg>
+
+<header class="nav-shell">
+<nav class="wrap nav" aria-label="Navigation"><a class="brand" href="#accueil"><span class="mark">◈</span>SiteHistory <b>France</b></a><div class="navlinks"><a href="#fonctionnalites">Le produit</a><a href="#demo">Démonstration</a><a href="#fonctionnement">Comment ça marche</a><a class="pillbutton" href="#tarif">Offre pilote ↗</a></div></nav>
 </header>
-<main id="haut">
-<section class="hero">
- <div class="wrap hero-inner">
-  <div>
-   <p class="eyebrow">Le passé d'un terrain, enfin lisible</p>
-   <h1>Votre parcelle a une histoire.<br><span style="color:#a6dfae">Retrouvez-la.</span></h1>
-   <p class="sub">Cadastre, photographies aériennes historiques IGN et principales données publiques Géorisques, réunis dans un même dossier exploratoire.</p>
-   <div class="hero-actions">
-    <a class="btn" href="#tarif" style="background:#b5edb5;color:#12382e">Découvrir l'offre →</a>
-    <a class="btn outline" href="#comment" style="color:#effaf0;border-color:#53786e">Voir le fonctionnement</a>
-   </div>
-   <p class="mini">Données publiques françaises • Dossier HTML exportable • Sans abonnement prévu</p>
-  </div>
-  <div class="map" role="img" aria-label="Illustration stylisée d'une parcelle cadastrale superposée à des paysages aériens ; image non géographique">
-   <div class="map-chip">◉ Parcelle sélectionnée</div>
-   <div class="map-bottom"><strong>1950 → aujourd'hui</strong><span>Parcourir les époques disponibles</span></div>
-  </div>
- </div>
+
+<main>
+<section class="hero" id="accueil">
+<div class="wrap">
+<div>
+<p class="eyebrow">Une nouvelle lecture de votre terrain</p>
+<h1>Chaque parcelle a une histoire.<br><em>Retrouvez-la.</em></h1>
+<p class="lede">Photographies aériennes anciennes, cadastre et principaux indices environnementaux publics : les informations d'un terrain réunies dans un seul dossier exploratoire.</p>
+<div class="actions"><a class="button bright" href="#demo">Découvrir l'outil ↗</a><a class="button line" href="#tarif">Consulter l'offre pilote</a></div>
+<div class="benefits"><span><b>✓</b> France métropolitaine</span><span><b>✓</b> Données publiques</span><span><b>✓</b> Sans abonnement</span></div>
+</div>
+<div>
+<div class="viewer">
+<div class="viewerhead"><span class="dots"><i></i><i></i><i></i></span><span>COMPARAISON HISTORIQUE</span><span>◈</span></div>
+<div class="map" style="--split:50%">
+<svg viewBox="0 0 600 470" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#land"/></svg>
+<svg viewBox="0 0 600 470" preserveAspectRatio="xMidYMid slice" class="old" aria-hidden="true"><use href="#land-old"/></svg>
+<div class="splitline"></div><span class="mapbadge a">ARCHIVES</span><span class="mapbadge b">AUJOURD'HUI</span>
+</div>
+<div class="viewfoot"><span>◈  Comparer les époques</span><span>1950–1965 → récent</span></div>
+</div>
+<p class="micro">Illustration stylisée et fictive, non issue de véritables photographies aériennes ou d'un dossier réel.</p>
+</div>
+</div>
 </section>
-<section id="comment" class="section wrap">
- <div class="center"><p class="eyebrow" style="color:#398264">En trois étapes</p><h2>Moins de recherches dispersées.<br>Plus de contexte.</h2><p class="muted">Le prototype permet de regrouper les sources utiles à une première revue historique et environnementale d'une parcelle.</p></div>
- <div class="trio">
-  <div class="tile"><span class="number">01</span><h3>Retrouvez la parcelle</h3><p>Recherchez une adresse française, choisissez la bonne parcelle et confirmez sa géométrie cadastrale.</p></div>
-  <div class="tile"><span class="number">02</span><h3>Explorez son historique</h3><p>Comparez les couches aériennes anciennes et récentes disponibles et consultez les indices publics alentour.</p></div>
-  <div class="tile"><span class="number">03</span><h3>Conservez les éléments</h3><p>Organisez des observations et exportez un dossier HTML, JSON ou GeoJSON pour poursuivre votre analyse.</p></div>
- </div>
+<div class="band"><div class="wrap"><span>◈ CADASTRE</span><span>◎ IMAGERIE IGN HISTORIQUE</span><span>◇ GÉORISQUES</span><span>↗ EXPORTS DOCUMENTÉS</span></div></div>
+
+<section class="section wrap" id="fonctionnalites">
+<div class="intro"><span class="kicker">Tout commence par une adresse</span><h2>Les bonnes informations, au même endroit.</h2><p>Les archives et les données publiques existent déjà. SiteHistory aide à les réunir et les explorer sans multiplier les onglets.</p></div>
+<div class="cards">
+<article class="card"><div class="symbol">▧</div><h3>Retrouvez la parcelle</h3><p>Recherchez une adresse, repérez sa géométrie cadastrale et confirmez la bonne parcelle avant toute interprétation.</p></article>
+<article class="card"><div class="symbol">◷</div><h3>Remontez dans le temps</h3><p>Découvrez les époques de photographies aériennes IGN disponibles et comparez leur évolution visuelle.</p></article>
+<article class="card"><div class="symbol">◎</div><h3>Explorez son contexte</h3><p>Rassemblez les principales données environnementales publiques disponibles à proximité de votre terrain.</p></article>
+</div>
 </section>
-<section class="section" style="background:#fff">
- <div class="wrap split">
-  <div class="board" aria-label="Illustration fictive du comparateur historique">
-   <header><span>Explorateur historique</span><span>Exemple illustratif</span></header>
-   <div class="timeline"><span></span><span></span><span></span><span></span><span></span></div>
-   <div class="samples"><div class="sample old"><label>Couche ancienne</label></div><div class="sample new"><label>Couche récente</label></div></div>
-   <p class="honesty" style="margin:15px 0 0">Illustration stylisée. Ce ne sont pas des clichés IGN ni des résultats de parcelle réelle.</p>
-  </div>
-  <div>
-   <p class="eyebrow" style="color:#398264">Ce que fait la V0.1</p>
-   <h2>Une base factuelle pour mieux examiner un terrain.</h2>
-   <p class="muted">Pour propriétaires, acheteurs ou professionnels qui veulent rassembler des éléments avant d'approfondir une recherche.</p>
-   <ul class="points">
-    <li>Géométrie et identifiant cadastral à confirmer.</li>
-    <li>Chronologie des orthophotographies disponibles, avec sources identifiables.</li>
-    <li>Repères Géorisques et données environnementales publiques, selon disponibilité.</li>
-    <li>Export des observations et des références collectées.</li>
-   </ul>
-   <p class="honesty">SiteHistory ne détecte pas automatiquement une pollution et ne remplace ni un diagnostic professionnel ni une vérification d'urbanisme. Certaines données peuvent être indisponibles ou incomplètes.</p>
-  </div>
- </div>
-</section>
-<section id="tarif" class="section price-section">
- <div class="wrap">
-  <div class="center"><p class="eyebrow" style="color:#398264">Un besoin ponctuel, un paiement ponctuel</p><h2>Un petit prix, pas une plateforme compliquée.</h2><p class="muted">Nous testons l'intérêt pour un rapport de parcelle. Le paiement sera activé avec Stripe avant toute prise de commande.</p></div>
-  <div class="pricing">
-   <span class="stat">OFFRE PILOTE ENVISAGÉE</span>
-   <div class="price">9,90 € <small>/ parcelle</small></div>
-   <p>Accès à un dossier exploratoire exportable. Pas d'abonnement. Prix de test, susceptible d'évoluer après la bêta.</p>
-   <ul class="points"><li>Historique aérien et sélection cadastrale</li><li>Données environnementales publiques disponibles</li><li>Export HTML avec références et observations</li></ul>
-   <a id="buy-sitehistory" data-checkout="sitehistory" class="btn primary" href="https://buy.stripe.com/test_28E4gy31QfuJfJ67mR6g800" rel="noopener">Être informé de l'ouverture →</a>
-   <p id="payment-state" class="honesty" aria-live="polite">Paiement test uniquement. Aucune commande réelle ni livraison ne sera effectuée.</p>
-  </div>
- </div>
-</section>
-<section id="outils" class="section wrap">
- <div class="center"><p class="eyebrow" style="color:#398264">Du même atelier</p><h2>Des outils simples, chacun pour un usage précis.</h2></div>
- <div class="other">
-  <div class="other-item"><span class="tag">Explorateur public</span><h3>Satellite Timeline</h3><p>Parcourez les images Sentinel-2, créez des séquences chronologiques pour des deltas et explorez d'autres lieux sur la carte. Le code source est disponible publiquement.</p><a href="./satellite.html">Voir le produit ↗</a></div>
-  <div class="other-item"><span class="tag">Prototype • accès non public</span><h3>Horizon Découverte</h3><p>Explorez une trajectoire patrimoniale simplifiée et les effets d'un changement de pays. Prototype gratuit distinct d'un simulateur familial privé.</p><a href="./horizon.html">Découvrir le simulateur ↗</a></div>
- </div>
-</section>
+
+<section class="section light-section" id="demo">
+<div class="wrap splitgrid">
+<div class="explain"><span class="kicker">Avant / après</span><h2>Ce qui a changé devient plus facile à voir.</h2><p>Comprendre l'histoire visible d'un lieu ne devrait pas demander des heures de recherches dispersées. Comparez les images, documentez vos observations, puis poursuivez l'analyse à votre rythme.</p>
+<ul class="checks"><li>Parcourir les périodes d'images disponibles</li><li>Repérer la parcelle sur les couches cadastrales</li><li>Consulter des indicateurs publics de risques</li><li>Exporter les observations et références</li></ul></div>
+<div class="interactive">
+<div class="map" id="compare" style="--split:50%">
+<svg viewBox="0 0 600 470" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#land"/></svg>
+<svg viewBox="0 0 600 470" preserveAspectRatio="xMidYMid slice" class="old" aria-hidden="true"><use href="#land-old"/></svg>
+<div class="splitline"></div><span class="mapbadge a">VUE ANCIENNE</span><span class="mapbadge b">VUE RÉCENTE</span>
+</div>
+<div class="sliderlabel"><label for="slider">Faites glisser pour comparer</label><span id="percent">50 / 50</span></div>
+<input id="slider" type="range" min="5" max="95" value="50" step="1" aria-label="Proportion de l'illustration historique affichée">
+<p class="caption">Démo graphique interactive, sans données géographiques réelles. La couverture et les dates précises varient selon la parcelle.</p>
+</div>
+</div></section>
+
+<section class="section wrap" id="fonctionnement">
+<div class="intro"><span class="kicker">Comment ça marche</span><h2>Trois étapes. Un seul dossier.</h2><p>Un parcours conçu pour aider à la première recherche, sans se substituer à une étude professionnelle.</p></div>
+<div class="steps">
+<div class="step"><div class="stepid">01</div><h3>Localisez</h3><p>Indiquez une adresse ou référence cadastrale et vérifiez visuellement le terrain sélectionné.</p></div>
+<div class="step"><div class="stepid">02</div><h3>Explorez</h3><p>Consultez les archives aériennes disponibles et les informations publiques utiles.</p></div>
+<div class="step"><div class="stepid">03</div><h3>Conservez</h3><p>Exportez un dossier HTML et les données associées pour documenter votre examen.</p></div>
+</div></section>
+
+<section class="section price-section" id="tarif">
+<div class="wrap pricegrid">
+<div class="pricecopy"><span class="kicker">Simple, ponctuel, transparent</span><h2>Une question sur un terrain ? Commencez ici.</h2><p>Nous préparons une offre pilote à paiement unique. Pas de formule complexe ni d'abonnement à oublier.</p>
+<p>Dans cette phase, le produit et le paiement peuvent être essayés techniquement, mais aucune commande réelle n'est encore ouverte.</p>
+</div>
+<div class="pricebox"><span class="tag">OFFRE PILOTE ENVISAGÉE</span><div class="amount">9,90 € <small>/ dossier</small></div><p>Dossier historique exploratoire d'une parcelle. Prix indicatif pour le lancement, non facturé pour les tests actuels.</p>
+<ul><li>Parcelle cadastrale identifiée et vérifiée</li><li>Archives aériennes disponibles</li><li>Informations environnementales publiques</li><li>Dossier HTML exportable et traçable</li></ul>
+<a class="button" href="https://buy.stripe.com/test_28E4gy31QfuJfJ67mR6g800" target="_blank" rel="noopener noreferrer">Essayer le paiement (mode test) ↗</a>
+<div class="test"><strong>Mode démonstration uniquement.</strong> Ce lien Stripe fonctionne en environnement de test : aucun argent réel n'est prélevé et aucun rapport n'est livré. Les vraies commandes seront ouvertes après finalisation du service.</div>
+<p class="disclaimer">SiteHistory n'est ni une étude de pollution des sols, ni une expertise immobilière, ni une vérification juridique de conformité.</p>
+</div>
+</div></section>
+
+<section class="section wrap">
+<div class="intro"><span class="kicker">Questions fréquentes</span><h2>Ce qu'il faut savoir.</h2></div>
+<div class="faq">
+<details><summary>Est-ce un diagnostic de pollution ou une vérification d'urbanisme ?</summary><p>Non. SiteHistory réunit des informations publiques et facilite un premier examen historique. Une pollution ou la conformité d'une construction ne peuvent pas être conclues à partir de ces seules données.</p></details>
+<details><summary>Les images historiques existent-elles pour toutes les parcelles ?</summary><p>Les dates et couches disponibles varient selon la localisation. Certaines images anciennes correspondent à une période d'acquisition et non à une date précise. Leur géoréférencement et leur résolution peuvent différer des images récentes.</p></details>
+<details><summary>À qui s'adresse cet outil ?</summary><p>Aux curieux, acheteurs, propriétaires et professionnels qui souhaitent gagner du temps pour rassembler des éléments documentaires. Il ne remplace pas les professionnels compétents pour les décisions à risque.</p></details>
+<details><summary>Puis-je déjà acheter un rapport ?</summary><p>Pas encore. Le parcours Stripe actuellement accessible est exclusivement un test technique sans argent réel et sans livraison. L'ouverture des commandes sera annoncée quand la livraison et les formalités de vente seront prêtes.</p></details>
+</div></section>
+
+<section class="bottom"><div class="wrap bottomgrid"><div><h2>Un terrain peut raconter beaucoup.</h2><p>Commencez par comprendre ce que les données publiques en montrent.</p></div><a class="button bright" href="#demo">Explorer la démonstration ↗</a></div></section>
 </main>
-<footer class="foot"><div class="wrap foot-inner">
- <div><strong style="color:#fff">SiteHistory France</strong><br>Outil exploratoire indépendant, sans affiliation avec l'IGN, le cadastre ni Géorisques.</div>
- <div><a href="https://www.georisques.gouv.fr/" target="_blank" rel="noopener noreferrer">Sources Géorisques</a><br>Aucune donnée bancaire n'est saisie ni conservée sur cette page.</div>
-</div></footer>
+<footer><div class="wrap foot"><div><strong>◈ SiteHistory France</strong><br>Outil indépendant utilisant des jeux de données publics. Sans affiliation avec l'IGN, le cadastre ou Géorisques. Les visuels de cette page sont des illustrations fictives.</div><div class="footnav"><a href="#fonctionnalites">Le produit</a><a href="#tarif">Offre pilote</a><a href="https://www.georisques.gouv.fr/" target="_blank" rel="noopener noreferrer">Géorisques ↗</a></div></div></footer>
 <script>
-/*
- * Paiement : renseigner uniquement l'URL officielle d'un Payment Link Stripe
- * pour chaque offre. Sans URL, la page conserve son formulaire d'intérêt email.
- * Ne jamais mettre de cle API ou de secret dans ce fichier public.
- */
-const PAYMENT_LINKS = {sitehistory: "https://buy.stripe.com/test_28E4gy31QfuJfJ67mR6g800"};
-for (const el of document.querySelectorAll("[data-checkout]")) {
- const url = PAYMENT_LINKS[el.dataset.checkout];
- if (typeof url === "string" && /^https:\/\/buy\.stripe\.com\/[a-zA-Z0-9]+(?:\?.*)?$/.test(url)) {
-   el.href = url;
-   el.textContent = "Tester le paiement Stripe (sans débit réel) →";
-   document.getElementById("payment-state").textContent =
-       "Lien vers Stripe en mode test : aucun paiement réel ni rapport livré.";
- } else {
-   el.addEventListener("click", () => {
-     document.getElementById("payment-state").textContent =
-       "Un message à envoyer va s'ouvrir dans votre messagerie. Aucun paiement n'a lieu sur cette page.";
-   });
- }
-}
+(()=>{const slider=document.getElementById("slider"),frame=document.getElementById("compare"),value=document.getElementById("percent");if(!slider||!frame||!value)return;const update=()=>{const n=Number(slider.value);frame.style.setProperty("--split",n+"%");value.textContent=n+" / "+(100-n)};slider.addEventListener("input",update);update()})();
 </script>
 </body>
 </html>
