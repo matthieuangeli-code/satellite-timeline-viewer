@@ -74,7 +74,7 @@ h2{font-size:clamp(29px,3.4vw,44px);line-height:1.15;letter-spacing:-1.6px;margi
 </style>
 </head>
 <body>
-<div class="notice">Première version en préparation commerciale — aucune carte bancaire demandée sur ce site.</div>
+<div class="notice">Prototype commercial — le bouton Stripe est en mode test : aucun débit réel.</div>
 <header class="wrap top">
  <a class="brand" href="#haut"><span class="mark">◈</span> SiteHistory<span style="color:#6a8d7c;font-weight:500"> France</span></a>
  <nav><a href="#comment">Comment ça marche</a><a href="#outils">Autres outils</a><a class="btn primary" href="#tarif">Voir le tarif →</a></nav>
@@ -136,8 +136,8 @@ h2{font-size:clamp(29px,3.4vw,44px);line-height:1.15;letter-spacing:-1.6px;margi
    <div class="price">9,90 € <small>/ parcelle</small></div>
    <p>Accès à un dossier exploratoire exportable. Pas d'abonnement. Prix de test, susceptible d'évoluer après la bêta.</p>
    <ul class="points"><li>Historique aérien et sélection cadastrale</li><li>Données environnementales publiques disponibles</li><li>Export HTML avec références et observations</li></ul>
-   <a id="buy-sitehistory" data-checkout="sitehistory" class="btn primary" href="mailto:matt@alexmattetc.fr?subject=SiteHistory%20-%20acc%C3%A8s%20pilote&body=Bonjour%2C%20je%20souhaite%20%C3%AAtre%20inform%C3%A9%20de%20l%27ouverture%20de%20SiteHistory." rel="noopener">Être informé de l'ouverture →</a>
-   <p id="payment-state" class="honesty" aria-live="polite">Le paiement n'est pas encore ouvert. Ce bouton prépare un email de demande d'accès ; aucun achat n'est effectué.</p>
+   <a id="buy-sitehistory" data-checkout="sitehistory" class="btn primary" href="https://buy.stripe.com/test_28E4gy31QfuJfJ67mR6g800" rel="noopener">Être informé de l'ouverture →</a>
+   <p id="payment-state" class="honesty" aria-live="polite">Paiement test uniquement. Aucune commande réelle ni livraison ne sera effectuée.</p>
   </div>
  </div>
 </section>
@@ -151,7 +151,7 @@ h2{font-size:clamp(29px,3.4vw,44px);line-height:1.15;letter-spacing:-1.6px;margi
 </main>
 <footer class="foot"><div class="wrap foot-inner">
  <div><strong style="color:#fff">SiteHistory France</strong><br>Outil exploratoire indépendant, sans affiliation avec l'IGN, le cadastre ni Géorisques.</div>
- <div><a href="mailto:matt@alexmattetc.fr?subject=SiteHistory%20-%20contact">Contact</a> · <a href="https://www.georisques.gouv.fr/" target="_blank" rel="noopener noreferrer">Sources Géorisques</a><br>Aucune donnée bancaire n'est saisie ni conservée sur cette page.</div>
+ <div><a href="https://www.georisques.gouv.fr/" target="_blank" rel="noopener noreferrer">Sources Géorisques</a><br>Aucune donnée bancaire n'est saisie ni conservée sur cette page.</div>
 </div></footer>
 <script>
 /*
@@ -159,14 +159,14 @@ h2{font-size:clamp(29px,3.4vw,44px);line-height:1.15;letter-spacing:-1.6px;margi
  * pour chaque offre. Sans URL, la page conserve son formulaire d'intérêt email.
  * Ne jamais mettre de cle API ou de secret dans ce fichier public.
  */
-const PAYMENT_LINKS = {sitehistory: ""};
+const PAYMENT_LINKS = {sitehistory: "https://buy.stripe.com/test_28E4gy31QfuJfJ67mR6g800"};
 for (const el of document.querySelectorAll("[data-checkout]")) {
  const url = PAYMENT_LINKS[el.dataset.checkout];
  if (typeof url === "string" && /^https:\/\/buy\.stripe\.com\/[a-zA-Z0-9]+(?:\?.*)?$/.test(url)) {
    el.href = url;
-   el.textContent = "Commander le dossier — 9,90 € →";
+   el.textContent = "Tester le paiement Stripe (sans débit réel) →";
    document.getElementById("payment-state").textContent =
-       "Paiement traité par Stripe. Vérifiez les conditions et le mode de livraison avant de payer.";
+       "Lien vers Stripe en mode test : aucun paiement réel ni rapport livré.";
  } else {
    el.addEventListener("click", () => {
      document.getElementById("payment-state").textContent =
