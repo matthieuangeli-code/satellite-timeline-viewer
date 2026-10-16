@@ -60,7 +60,7 @@ select{width:100%;border-radius:10px;background:#fff;color:#2a523c;border:1px so
 <label for="era">Vue historique</label><select id="era"><option value="1950">Photographies 1950–1965</option><option value="2000">Photographies 2000–2005</option><option value="2006">Photographies 2006–2010</option><option value="2011">Photographies 2011–2015</option><option value="2016">Photographies 2016–2020</option><option value="2021">Photographies 2021–2023</option></select>
 <div class="data"><span class="key">Adresse retrouvée</span><span class="value" id="found-address">En attente de recherche</span></div>
 <div class="data"><span class="key">Parcelle cadastrale</span><span class="value" id="parcel">À rechercher</span></div>
-<p id="parcel-note" style="font-size:11px">Une parcelle proposée à partir du point d'adresse doit être vérifiée visuellement : l'adresse peut tomber sur la route ou près d'une limite.</p>
+<p id="parcel-note" style="font-size:11px">Si la parcelle recherchée n’apparaît pas, cliquez directement dessus dans la carte. La sélection doit être vérifiée visuellement.</p>
 <a class="button secondary" href="https://remonterletemps.ign.fr/" id="official" target="_blank" rel="noopener noreferrer">Voir aussi sur le site IGN ↗</a>
 <p class="note"><strong>Démo limitée.</strong> Cette page teste la recherche et le comparateur aérien. Les informations Géorisques et l'export du dossier complet appartiennent au prototype SiteHistory, non encore hébergé ici.</p>
 <p class="help">Une couche blanche ? Certaines périodes ne couvrent pas encore votre zone. Essayez 1950–1965 ou consultez <a href="https://remonterletemps.ign.fr/" target="_blank" rel="noopener noreferrer">Remonter le temps (IGN)</a>.</p>
@@ -121,6 +121,15 @@ function init(){
  current.on("tileerror",function(){state("Les images actuelles IGN ne sont pas accessibles momentanément dans cette zone. Essayez ultérieurement.",true)});
  $("compare").addEventListener("input",split);
  $("era").addEventListener("change",function(){imagery();state("Période historique : "+HISTORY[$("era").value].label+". Les tuiles sont chargées depuis IGN.")});
+ map.on("click", async function(ev) {
+   const point=ev.latlng;
+   state("Recherche de la parcelle sélectionnée sur la carte…");
+   if(outline){map.removeLayer(outline);outline=null}
+   if(outlineCurrent){mapCurrent.removeLayer(outlineCurrent);outlineCurrent=null}
+   $("parcel").textContent="Recherche en cours";
+   await queryParcel(point.lng,point.lat);
+   if(!$("status").classList.contains("failed"))state("Parcelle candidate affichée. Vérifiez sa correspondance.");
+ });
  split();setTimeout(()=>{map.invalidateSize();mapCurrent.invalidateSize();},100);return true;
 }
 async function getJson(url){
