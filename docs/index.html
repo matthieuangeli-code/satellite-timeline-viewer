@@ -117,7 +117,7 @@ footer{background:#102f29;color:#abc5b2;padding:33px 0;font-size:12px;line-heigh
 <p class="eyebrow">Une nouvelle lecture de votre terrain</p>
 <h1>Chaque parcelle a une histoire.<br><em>Retrouvez-la.</em></h1>
 <p class="lede">Photographies aériennes anciennes, cadastre et principaux indices environnementaux publics : les informations d'un terrain réunies dans un seul dossier exploratoire.</p>
-<div class="actions"><a class="button bright" href="#demo">Découvrir l'outil ↗</a><a class="button line" href="#tarif">Consulter l'offre pilote</a></div>
+<div class="actions"><a class="button bright" href="./demo.html">Essayer gratuitement sur une adresse ↗</a><a class="button line" href="#tarif">Consulter l'offre pilote</a></div>
 <div class="benefits"><span><b>✓</b> France métropolitaine</span><span><b>✓</b> Données publiques</span><span><b>✓</b> Sans abonnement</span></div>
 </div>
 <div>
@@ -148,6 +148,7 @@ footer{background:#102f29;color:#abc5b2;padding:33px 0;font-size:12px;line-heigh
 <section class="section light-section" id="demo">
 <div class="wrap splitgrid">
 <div class="explain"><span class="kicker">Avant / après</span><h2>Ce qui a changé devient plus facile à voir.</h2><p>Comprendre l'histoire visible d'un lieu ne devrait pas demander des heures de recherches dispersées. Comparez les images, documentez vos observations, puis poursuivez l'analyse à votre rythme.</p>
+<p><a class="button" style="background:#173d34;color:white;margin:4px 0 18px" href="./demo.html">Lancer la démo avec les vraies images IGN ↗</a></p>
 <ul class="checks"><li>Parcourir les périodes d'images disponibles</li><li>Repérer la parcelle sur les couches cadastrales</li><li>Consulter des indicateurs publics de risques</li><li>Exporter les observations et références</li></ul></div>
 <div class="interactive">
 <div class="map" id="compare" style="--split:50%">
@@ -157,7 +158,7 @@ footer{background:#102f29;color:#abc5b2;padding:33px 0;font-size:12px;line-heigh
 </div>
 <div class="sliderlabel"><label for="slider">Faites glisser pour comparer</label><span id="percent">50 / 50</span></div>
 <input id="slider" type="range" min="5" max="95" value="50" step="1" aria-label="Proportion de l'illustration historique affichée">
-<p class="caption">Démo graphique interactive, sans données géographiques réelles. La couverture et les dates précises varient selon la parcelle.</p>
+<p class="caption">Démo graphique interactive, sans données géographiques réelles. <a href="./demo.html">Essayer la carte IGN sur une vraie adresse ↗</a> La couverture et les dates précises varient selon la parcelle.</p>
 </div>
 </div></section>
 
@@ -191,9 +192,9 @@ footer{background:#102f29;color:#abc5b2;padding:33px 0;font-size:12px;line-heigh
 <details><summary>Puis-je déjà acheter un rapport ?</summary><p>Pas encore. Le parcours Stripe actuellement accessible est exclusivement un test technique sans argent réel et sans livraison. L'ouverture des commandes sera annoncée quand la livraison et les formalités de vente seront prêtes.</p></details>
 </div></section>
 
-<section class="bottom"><div class="wrap bottomgrid"><div><h2>Un terrain peut raconter beaucoup.</h2><p>Commencez par comprendre ce que les données publiques en montrent.</p></div><a class="button bright" href="#demo">Explorer la démonstration ↗</a></div></section>
+<section class="bottom"><div class="wrap bottomgrid"><div><h2>Un terrain peut raconter beaucoup.</h2><p>Commencez par comprendre ce que les données publiques en montrent.</p></div><a class="button bright" href="./demo.html">Lancer la démo réelle ↗</a></div></section>
 </main>
-<footer><div class="wrap foot"><div><strong>◈ SiteHistory France</strong><br>Outil indépendant utilisant des jeux de données publics. Sans affiliation avec l'IGN, le cadastre ou Géorisques. Les visuels de cette page sont des illustrations fictives.</div><div class="footnav"><a href="#fonctionnalites">Le produit</a><a href="#tarif">Offre pilote</a><a href="https://www.georisques.gouv.fr/" target="_blank" rel="noopener noreferrer">Géorisques ↗</a></div></div></footer>
+<footer><div class="wrap foot"><div><strong>◈ SiteHistory France</strong><br>Outil indépendant utilisant des jeux de données publics. Sans affiliation avec l'IGN, le cadastre ou Géorisques. Les visuels de cette page sont des illustrations fictives.</div><div class="footnav"><a href="#fonctionnalites">Le produit</a><a href="./demo.html">Démo réelle</a><a href="#tarif">Offre pilote</a><a href="https://www.georisques.gouv.fr/" target="_blank" rel="noopener noreferrer">Géorisques ↗</a></div></div></footer>
 <script>
 (()=>{const slider=document.getElementById("slider"),frame=document.getElementById("compare"),value=document.getElementById("percent");if(!slider||!frame||!value)return;const update=()=>{const n=Number(slider.value);frame.style.setProperty("--split",n+"%");value.textContent=n+" / "+(100-n)};slider.addEventListener("input",update);update()})();
 </script>
