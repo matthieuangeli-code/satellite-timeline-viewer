@@ -27,3 +27,15 @@ jobs:
           path: docs
       - id: deployment
         uses: actions/deploy-pages@v4
+      - name: Vérifier l'accès HTTP au site et à la démo
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://matthieuangeli-code.github.io/satellite-timeline-viewer"
+          for path in "/" "/demo.html"; do
+            url="${BASE}${path}"
+            echo "Testing ${url}"
+            curl -fLsS --retry 10 --retry-all-errors --retry-delay 6                  --connect-timeout 8 --max-time 20 "${url}" > /tmp/landing.html
+            grep -q 'SiteHistory' /tmp/landing.html
+            echo "HTTP OK: ${url}"
+          done
