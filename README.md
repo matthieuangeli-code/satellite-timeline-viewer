@@ -71,3 +71,11 @@ No API key is required. The app uses the public Earth Search catalogue and Senti
 - Sentinel-2 natural colour is suitable for large-scale change, not precise shoreline surveying.
 - The movie omits a catalogue acquisition if its preview cannot be downloaded or read.
 - The two-year option can contain many frames and take longer on the first build; later identical builds use the Streamlit cache.
+
+## Démo SiteHistory France
+
+`docs/demo.html` permet l’exploration gratuite d’une parcelle : recherche d’adresse ou de référence cadastrale, candidats à confirmer, deux panneaux IGN synchronisés et périodes vérifiées par GetCapabilities et contrôle des images. Aucun paiement ou export n’est proposé sans backend configuré dans `docs/assets/config.js`. Ce fichier ne doit contenir qu’une URL publique, jamais une clé.
+
+Le comparateur vérifie les rasters effectivement affichés et refuse les images manquantes ou identiques. Les captures ne permettent pas de déduire automatiquement un changement de construction, une pollution ou l’absence de risque.
+
+Le contrôle navigateur `scripts/smoke-sitehistory.mjs` teste trois adresses françaises sur desktop et mobile, sauvegarde des captures et simule une indisponibilité historique. Il utilise les API réelles ; aucun résultat synthétique ne remplace une réponse manquante. Le workflow CI sert le checkout testé afin de ne pas tester par erreur une ancienne version encore publiée sur Pages.

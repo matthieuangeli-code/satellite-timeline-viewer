@@ -5,3 +5,6 @@ __pycache__/
 *.log
 .tools/
 .streamlit/secrets.toml
+
+node_modules/
+test-results/

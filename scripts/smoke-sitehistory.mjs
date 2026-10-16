@@ -1,75 +1,50 @@
-import { chromium } from "playwright";
-import { PNG } from "pngjs";
-
-const origin = "https://matthieuangeli-code.github.io/satellite-timeline-viewer";
-const browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
-const page = await browser.newPage({ viewport: { width: 1360, height: 920 } });
-const errors = [];
-page.on("pageerror", (e) => errors.push("JS: " + e.message));
-page.on("console", (m) => { if(m.type() === "error") errors.push("Console: " + m.text().slice(0, 250)); });
+// Live IGN check: success requires distinct raster fingerprints, not just loaded tiles.
+import { chromium } from 'playwright';
+import { PNG } from 'pngjs';
+import { mkdir } from 'node:fs/promises';
+const base=process.env.SITEHISTORY_BASE_URL||'https://matthieuangeli-code.github.io/satellite-timeline-viewer';
+const output=process.env.SITEHISTORY_SCREENSHOTS||'test-results/sitehistory';
+await mkdir(output,{recursive:true});
+const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+const addresses=['37 rue Grande, 27510 Tilly','1 place de la Comédie, 69001 Lyon','1 place du Bouffay, 44000 Nantes'];
+let failures=0;
 try {
-  const response = await page.goto(origin + "/demo.html", { waitUntil: "domcontentloaded", timeout: 35000 });
-  if (response.status() !== 200) throw new Error("Demo returned HTTP " + response.status());
-  await page.waitForFunction(() => !!document.querySelector(".leaflet-map-pane"), { timeout: 25000 });
-  console.log("Map initialized with Leaflet.");
-  await page.waitForFunction(() => {
-    const text = document.getElementById("found-address")?.textContent || "";
-    return text !== "En attente de recherche" && text !== "Recherche en cours";
-  }, { timeout: 35000 });
-  const address = await page.locator("#found-address").innerText();
-  const status = await page.locator("#status").innerText();
-  console.log("Geocoder result:", address, "| status:", status);
-  if (/Non trouvé|indisponible|introuvable/i.test(address)) throw new Error("Geocoding failed: " + status);
-  await page.locator("#compare").fill("75");
-  const divider = await page.locator("#divider").evaluate(el => el.style.left);
-  if(divider !== "75%") throw new Error("Slider update failed: " + divider);
-  await page.waitForFunction(() => Array.from(document.querySelectorAll("#map img.leaflet-tile")).some(i=>i.complete&&i.naturalWidth>0) && Array.from(document.querySelectorAll("#map-current img.leaflet-tile")).some(i=>i.complete&&i.naturalWidth>0), { timeout: 35000 });
-  await page.waitForFunction(() => !/Recherche en cours/.test(document.getElementById("parcel")?.textContent || ""), { timeout: 24000 });
-  const tileStatus = await page.evaluate(() => ({
-    tileCount:document.querySelectorAll(".leaflet-tile-loaded").length,
-    historical:Array.from(document.querySelectorAll("#map img.leaflet-tile")).filter(i=>i.complete&&i.naturalWidth>0).length,
-    current:Array.from(document.querySelectorAll("#map-current img.leaflet-tile")).filter(i=>i.complete&&i.naturalWidth>0).length,
-    parcel:document.querySelector("#parcel")?.textContent,
-    status:document.querySelector("#status")?.textContent
-  }));
-  console.log("Imagery and parcel:",JSON.stringify(tileStatus));
-  console.log("Current map diagnostics", JSON.stringify(await page.evaluate(()=>{
-    const el=document.querySelector("#map-current");
-    const st=el&&getComputedStyle(el);
-    return {rect:el?.getBoundingClientRect().toJSON(),style:st?{height:st.height,width:st.width,clip:st.clipPath,display:st.display}:null,
-      tiles:document.querySelectorAll("#map-current img").length,
-      img: Array.from(document.querySelectorAll("#map-current img")).slice(0,2).map(x=>({src:x.currentSrc,width:x.naturalWidth,height:x.naturalHeight,complete:x.complete})),
-      pane:!!document.querySelector("#map-current .leaflet-map-pane"),
-      failures:performance.getEntriesByType("resource").filter(x=>x.name.includes("data.geopf.fr/wmts")).slice(-3).map(x=>({name:x.name.slice(0,190),transfer:x.transferSize,duration:x.duration}))};
-  })));
-  if(tileStatus.historical < 1 || tileStatus.current < 1) throw new Error("Historical or current IGN tile missing.");
-  const mapImage = page.locator("#map").locator("..");
-  await page.locator("#compare").fill("0");
-  await page.waitForTimeout(650);
-  const today = PNG.sync.read(await mapImage.screenshot());
-  await page.locator("#compare").fill("100");
-  await page.waitForTimeout(650);
-  const past = PNG.sync.read(await mapImage.screenshot());
-  let diff=0,total=0;
-  for(let y=Math.floor(past.height*.24);y<Math.floor(past.height*.77);y+=3){
-    for(let x=Math.floor(past.width*.15);x<Math.floor(past.width*.84);x+=3){
-      const i=(y*past.width+x)*4;
-      const delta=Math.abs(past.data[i]-today.data[i])+Math.abs(past.data[i+1]-today.data[i+1])+Math.abs(past.data[i+2]-today.data[i+2]);
-      if(delta>45)diff++;total++;
-    }
-  }
-  const differencePercent=Math.round(1000*diff/total)/10;
-  console.log("Real image visual difference (historic vs current):",differencePercent+"% sampled pixels");
-  if(differencePercent<8)throw new Error("Images are visually identical or an IGN tile layer is blank: "+differencePercent+"%");
-  if(/Non disponible|Aucune parcelle/.test(tileStatus.parcel||""))throw new Error("Parcel lookup did not return a feature: "+tileStatus.parcel);
-
-  const h = await page.goto(origin + "/", {waitUntil:"domcontentloaded",timeout:35000});
-  if (h.status() !== 200) throw new Error("Home HTTP "+h.status());
-  await page.locator('a[href="./demo.html"]').first().waitFor({timeout:8000});
-  console.log("Homepage CTA to demo confirmed.");
-  console.log("Browser smoke test PASSED.");
-} catch(e) {
-  console.error("Browser smoke test FAILED:",e.message);
-  console.error(errors.slice(-10).join("\n"));
-  process.exitCode = 1;
-} finally { await browser.close(); }
+ for(const mobile of [false,true]) for(const [index,address] of addresses.entries()) {
+  const name=`${mobile?'mobile':'desktop'}-${index+1}`;
+  const context=await browser.newContext({viewport:{width:mobile?390:1360,height:mobile?844:1000}});
+  const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  try {
+   const response=await page.goto(base+'/demo.html',{waitUntil:'domcontentloaded',timeout:40000});
+   if(response.status()!==200)throw Error('Demo HTTP '+response.status());
+   await page.locator('#era').waitFor({state:'visible'});
+   await page.waitForFunction(()=>document.querySelector('#comparison-state').dataset.oldHash||document.querySelector('#status').classList.contains('failed'),null,{timeout:150000});
+   await page.locator('#address').fill(address);await page.locator('#search').click();
+   await page.waitForFunction(()=>document.querySelector('#comparison-state').dataset.oldHash&&document.querySelector('#candidates').options.length>1,null,{timeout:150000});
+   const candidate= index===0 ? '276440000B0150' : await page.locator('#candidates option').nth(1).getAttribute('value');
+   await page.locator('#candidates').selectOption(candidate);
+   await page.locator('#confirm').click();
+   const state=await page.locator('#comparison-state').evaluate(e=>({old:e.dataset.oldHash,recent:e.dataset.newHash}));
+   if(!state.old||state.old===state.recent)throw Error('Raster images not demonstrably different');
+   const sources=await Promise.all(['old-source','new-source'].map(id=>page.locator('#'+id).innerText()));
+   if(!sources[0].includes('ORTHOIMAGERY.')||sources[0]===sources[1])throw Error('Distinct IGN sources missing');
+   const boxes=await Promise.all(['map-old','map-new'].map(id=>page.locator('#'+id).boundingBox()));
+   if(boxes[0].width!==boxes[1].width||boxes[0].height!==boxes[1].height)throw Error('Unequal frame dimensions');
+   const images=[];for(const id of ['map-old','map-new'])images.push(PNG.sync.read(await page.locator('#'+id).screenshot({path:`${output}/${name}-${id}.png`})));
+   let changed=0,total=0;for(let y=60;y<images[0].height-40;y+=3)for(let x=40;x<images[0].width-30;x+=3){const j=(y*images[0].width+x)*4;let delta=0;for(let k=0;k<3;k++)delta+=Math.abs(images[0].data[j+k]-images[1].data[j+k]);if(delta>36)changed++;total++}
+   if(!total||changed/total<.01)throw Error('Visible screenshots insufficiently different');
+   await page.screenshot({path:`${output}/${name}.png`,fullPage:true});
+   // Force historical requests to fail in a fresh page: no recent substitute allowed.
+   const missing=await context.newPage();
+   await missing.route('**/wmts?**',route=>{const u=new URL(route.request().url());if(u.searchParams.get('REQUEST')==='GetTile'&&u.searchParams.get('LAYER')!=='ORTHOIMAGERY.ORTHOPHOTOS')return route.fulfill({status:404,body:'Intentional test outage',headers:{'Access-Control-Allow-Origin':'*'}});return route.continue()});
+   await missing.goto(base+'/demo.html',{waitUntil:'domcontentloaded'});
+   await missing.waitForFunction(()=>/Aucune période historique vérifiée|Image manquante|Comparaison non validée/.test(document.querySelector('#comparison-state').textContent),null,{timeout:150000});
+   if(await missing.locator('#comparison-state').getAttribute('data-old-hash'))throw Error('Missing image incorrectly validated');
+   if(!await missing.locator('#prepare').isDisabled())throw Error('Missing image allowed purchase preflight');
+   await missing.screenshot({path:`${output}/${name}-missing.png`,fullPage:true});
+   if(errors.length)throw Error(errors.join('; '));
+   console.log(JSON.stringify({name,address,passed:true,sources,hashes:state,visualDifference:changed/total}));
+  }catch(e){failures++;await page.screenshot({path:`${output}/${name}-FAILED.png`,fullPage:true}).catch(()=>{});console.error(JSON.stringify({name,address,passed:false,error:e.message}));}
+  finally{await context.close()}
+ }
+ if(failures)process.exitCode=1;
+}finally{await browser.close()}

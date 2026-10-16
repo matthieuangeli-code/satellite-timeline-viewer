@@ -6,6 +6,13 @@ on:
       - ".github/workflows/demo-smoke.yml"
       - "scripts/smoke-sitehistory.mjs"
       - "docs/demo.html"
+      - "docs/assets/**"
+  pull_request:
+    paths:
+      - ".github/workflows/demo-smoke.yml"
+      - "scripts/smoke-sitehistory.mjs"
+      - "docs/demo.html"
+      - "docs/assets/**"
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,7 +27,22 @@ jobs:
           node-version: "22"
       - name: Install Playwright Chromium
         run: |
-          npm install --no-save playwright@1.56.1 pngjs@7.0.0
+          npm install --no-save --package-lock=false playwright@1.56.1 pngjs@7.0.0
           npx playwright install --with-deps chromium
-      - name: Check public SiteHistory demo in real browser
+      - name: Serve this checkout
+        run: |
+          python3 -m http.server 8000 --directory docs > /tmp/sitehistory-http.log 2>&1 &
+          for i in {1..10}; do
+            if curl -fsS http://127.0.0.1:8000/demo.html > /dev/null; then break; fi
+            sleep 1
+          done
+      - name: Check SiteHistory against real public APIs in Chromium
+        env:
+          SITEHISTORY_BASE_URL: http://127.0.0.1:8000
         run: node scripts/smoke-sitehistory.mjs
+      - name: Preserve browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sitehistory-browser-checks
+          path: test-results/sitehistory
