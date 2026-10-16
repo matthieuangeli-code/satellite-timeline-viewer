@@ -5,6 +5,7 @@ on:
     paths:
       - ".github/workflows/demo-smoke.yml"
       - "scripts/smoke-sitehistory.mjs"
+      - "docs/demo.html"
   workflow_dispatch:
 permissions:
   contents: read
