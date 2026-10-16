@@ -23,12 +23,12 @@ try {
   await page.locator("#compare").fill("75");
   const divider = await page.locator("#divider").evaluate(el => el.style.left);
   if(divider !== "75%") throw new Error("Slider update failed: " + divider);
-  await page.waitForFunction(() => document.querySelectorAll("#map .leaflet-tile-loaded").length > 0 && document.querySelectorAll("#map-current .leaflet-tile-loaded").length > 0, { timeout: 35000 });
+  await page.waitForFunction(() => Array.from(document.querySelectorAll("#map img.leaflet-tile")).some(i=>i.complete&&i.naturalWidth>0) && Array.from(document.querySelectorAll("#map-current img.leaflet-tile")).some(i=>i.complete&&i.naturalWidth>0), { timeout: 35000 });
   await page.waitForFunction(() => !/Recherche en cours/.test(document.getElementById("parcel")?.textContent || ""), { timeout: 24000 });
   const tileStatus = await page.evaluate(() => ({
     tileCount:document.querySelectorAll(".leaflet-tile-loaded").length,
-    historical:document.querySelectorAll("#map .leaflet-tile-loaded").length,
-    current:document.querySelectorAll("#map-current .leaflet-tile-loaded").length,
+    historical:Array.from(document.querySelectorAll("#map img.leaflet-tile")).filter(i=>i.complete&&i.naturalWidth>0).length,
+    current:Array.from(document.querySelectorAll("#map-current img.leaflet-tile")).filter(i=>i.complete&&i.naturalWidth>0).length,
     parcel:document.querySelector("#parcel")?.textContent,
     status:document.querySelector("#status")?.textContent
   }));
