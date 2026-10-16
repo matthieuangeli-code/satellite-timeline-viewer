@@ -22,9 +22,12 @@ try {
   await page.locator("#compare").fill("75");
   const divider = await page.locator("#divider").evaluate(el => el.style.left);
   if(divider !== "75%") throw new Error("Slider update failed: " + divider);
-  await page.waitForFunction(() => document.querySelectorAll(".leaflet-tile-loaded").length > 0, { timeout: 35000 });
+  await page.waitForFunction(() => document.querySelectorAll(".leaflet-historic-pane .leaflet-tile-loaded").length > 0 && document.querySelectorAll(".leaflet-current-pane .leaflet-tile-loaded").length > 0, { timeout: 35000 });
+  await page.waitForFunction(() => !/Recherche en cours/.test(document.getElementById("parcel")?.textContent || ""), { timeout: 24000 });
   const tileStatus = await page.evaluate(() => ({
     tileCount:document.querySelectorAll(".leaflet-tile-loaded").length,
+    historical:document.querySelectorAll(".leaflet-historic-pane .leaflet-tile-loaded").length,
+    current:document.querySelectorAll(".leaflet-current-pane .leaflet-tile-loaded").length,
     parcel:document.querySelector("#parcel")?.textContent,
     status:document.querySelector("#status")?.textContent
   }));
