@@ -33,6 +33,15 @@ try {
     status:document.querySelector("#status")?.textContent
   }));
   console.log("Imagery and parcel:",JSON.stringify(tileStatus));
+  console.log("Current map diagnostics", JSON.stringify(await page.evaluate(()=>{
+    const el=document.querySelector("#map-current");
+    const st=el&&getComputedStyle(el);
+    return {rect:el?.getBoundingClientRect().toJSON(),style:st?{height:st.height,width:st.width,clip:st.clipPath,display:st.display}:null,
+      tiles:document.querySelectorAll("#map-current img").length,
+      img: Array.from(document.querySelectorAll("#map-current img")).slice(0,2).map(x=>({src:x.currentSrc,width:x.naturalWidth,height:x.naturalHeight,complete:x.complete})),
+      pane:!!document.querySelector("#map-current .leaflet-map-pane"),
+      failures:performance.getEntriesByType("resource").filter(x=>x.name.includes("data.geopf.fr/wmts")).slice(-3).map(x=>({name:x.name.slice(0,190),transfer:x.transferSize,duration:x.duration}))};
+  })));
   if(tileStatus.historical < 1 || tileStatus.current < 1) throw new Error("Historical or current IGN tile missing.");
   const mapImage = page.locator("#map").locator("..");
   await page.locator("#compare").fill("0");
