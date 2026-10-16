@@ -23,7 +23,7 @@ input[type=text]{width:100%;padding:13px 15px;border:1px solid #cedbd0;border-ra
 button,.button{cursor:pointer;border:0;text-decoration:none;border-radius:10px;padding:13px 19px;font-size:13px;font-weight:800;background:#173d34;color:#fff;display:inline-flex;justify-content:center;align-items:center;gap:8px}
 button:disabled{cursor:wait;opacity:.55}.button.secondary{background:#edf4e9;color:#25553b}.button:hover{filter:brightness(1.08)}
 .error{padding:10px 20px;font-size:13px;min-height:40px;color:#486e54;background:#f4f9ef}.error.failed{color:#8c3f2d;background:#fff0e9}
-#map{height:clamp(390px,57vw,570px);background:#dae4d8;position:relative}
+#map{height:clamp(390px,57vw,570px);background:#dae4d8;position:relative}#map-current{position:absolute;inset:0;z-index:500;pointer-events:none;clip-path:inset(0 0 0 50%);background:transparent}#map-current .leaflet-container{background:transparent}
 .mapfallback{padding:40px;text-align:center;color:#4b7259}
 .copyright{padding:10px 20px;background:#fff;color:#7a8e7d;font-size:11px}
 .swipe{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:1000;background:#fffffff0;border:1px solid #d9e2d8;padding:10px 17px;border-radius:12px;width:min(330px,70%);box-shadow:0 4px 18px #12341d44;text-align:center;font-size:11px;font-weight:850}
@@ -49,7 +49,7 @@ select{width:100%;border-radius:10px;background:#fff;color:#2a523c;border:1px so
 <section class="mainpanel" aria-label="Comparaison historique interactive">
 <form id="search-form" class="search"><div class="field"><label for="address">Adresse du terrain en France</label><input id="address" type="text" value="37 rue Grande, 27510 Tilly" minlength="4" maxlength="200" autocomplete="street-address" required></div><button id="search" type="submit">Rechercher ↗</button><button class="button secondary" type="button" id="example">Exemple Tilly</button></form>
 <div id="status" class="error" role="status" aria-live="polite">Chargement de la carte…</div>
-<div style="position:relative"><div id="map"><p class="mapfallback">Chargement des photographies IGN…</p></div>
+<div style="position:relative"><div id="map"><p class="mapfallback">Chargement des photographies IGN…</p></div><div id="map-current" aria-hidden="true"></div>
 <div class="swipelabel old">ARCHIVES</div><div class="swipelabel new">AUJOURD'HUI</div><div id="divider"></div>
 <div class="swipe"><label for="compare">Glissez pour comparer les époques</label><input type="range" min="0" max="100" id="compare" value="50" aria-label="Proportion de la photographie actuelle"><span id="percent">50 / 50</span></div></div>
 <div class="copyright">Sources photographiques : IGN / Géoplateforme · Source des adresses : IGN (BAN) · Données cadastrales : API Carto IGN. Images fournies par les services officiels au moment de la consultation.</div>
@@ -83,7 +83,7 @@ const HISTORY = {
 "2021":{layer:"ORTHOIMAGERY.ORTHOPHOTOS2021-2023",style:"normal",format:"image/jpeg",label:"2021–2023"}
 };
 const CURRENT={layer:"ORTHOIMAGERY.ORTHOPHOTOS",style:"normal",format:"image/jpeg"};
-let map,historic,current,outline,lastPosition,tileErrors=0;
+let map,mapCurrent,historic,current,outline,outlineCurrent,lastPosition,tileErrors=0;
 function tileUrl(c){
  const p=new URLSearchParams({SERVICE:"WMTS",REQUEST:"GetTile",VERSION:"1.0.0",LAYER:c.layer,STYLE:c.style,FORMAT:c.format,TILEMATRIXSET:"PM"});
  return BASE+"?"+p.toString()+"&TILEMATRIX={z}&TILECOL={x}&TILEROW={y}";
@@ -91,7 +91,7 @@ function tileUrl(c){
 function state(message,error){
  const n=$("status");n.textContent=message;n.classList.toggle("failed",!!error);
 }
-function split(){const n=Number($("compare").value);if(map && map.getPane("current"))map.getPane("current").style.clipPath="inset(0 "+(100-n)+"% 0 0)";$("divider").style.left=n+"%";$("percent").textContent=n+" / "+(100-n);}
+function split(){const n=Number($("compare").value);$("map-current").style.clipPath="inset(0 0 0 "+n+"%)";$("divider").style.left=n+"%";$("percent").textContent=n+" / "+(100-n);}
 function imagery(){
  if(!map)return;
  if(historic)map.removeLayer(historic);
@@ -108,13 +108,20 @@ function init(){
  $("map").innerHTML="";
  map=L.map("map",{zoomControl:true,preferCanvas:true}).setView([46.7,2.6],6);
  map.createPane("historic");map.getPane("historic").style.zIndex=200;
- map.createPane("current");map.getPane("current").style.zIndex=210;
+ mapCurrent=L.map("map-current",{zoomControl:false,attributionControl:false,keyboard:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,touchZoom:false,preferCanvas:true}).setView([46.7,2.6],6);
+ // The upper map is clipped on its FULL-SIZE container. Clipping a Leaflet pane
+ // does not work reliably because pane elements do not have viewport dimensions.
  imagery();
- current=L.tileLayer(tileUrl(CURRENT),{pane:"current",attribution:"© IGN",maxNativeZoom:19,maxZoom:20,crossOrigin:false}).addTo(map);
+ current=L.tileLayer(tileUrl(CURRENT),{attribution:"© IGN",maxNativeZoom:19,maxZoom:20,crossOrigin:false}).addTo(mapCurrent);
+ let syncQueued=false;
+ map.on("move zoom",function(){
+   if(syncQueued)return;syncQueued=true;
+   requestAnimationFrame(()=>{syncQueued=false;const center=map.getCenter();mapCurrent.setView(center,map.getZoom(),{animate:false,reset:true});});
+ });
  current.on("tileerror",function(){state("Les images actuelles IGN ne sont pas accessibles momentanément dans cette zone. Essayez ultérieurement.",true)});
  $("compare").addEventListener("input",split);
  $("era").addEventListener("change",function(){imagery();state("Période historique : "+HISTORY[$("era").value].label+". Les tuiles sont chargées depuis IGN.")});
- split();setTimeout(()=>map.invalidateSize(),100);return true;
+ split();setTimeout(()=>{map.invalidateSize();mapCurrent.invalidateSize();},100);return true;
 }
 async function getJson(url){
  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),13000);
@@ -139,7 +146,9 @@ async function queryParcel(lon,lat){
  }
  if(candidates.length){
    const f=candidates[0];const p=f.properties||{};
-   outline=L.geoJSON(f,{style:{color:"#f4c344",weight:4,fillOpacity:0.07,fillColor:"#f4c344"}}).addTo(map);
+   const style={color:"#f4c344",weight:4,fillOpacity:0.07,fillColor:"#f4c344"};
+   outline=L.geoJSON(f,{style}).addTo(map);
+   outlineCurrent=L.geoJSON(f,{style}).addTo(mapCurrent);
    const bounds=outline.getBounds();if(bounds.isValid())map.fitBounds(bounds.pad(1.1),{maxZoom:18});
    $("parcel").textContent=[p.id||p.identifiant||f.id||"",p.section?"section "+p.section:"",p.numero?"n° "+p.numero:""].filter(Boolean).join(" · ")||"Polygone affiché (identifiant indisponible)";
    $("parcel-note").textContent=near?"Parcelle PROCHE proposée : sélection provisoire (point d’adresse sur la route possible). À confirmer visuellement ; aucun lien juridique avec l’adresse n’est établi.":"Parcelle au point d’adresse : confirmez visuellement qu’elle correspond à la propriété recherchée.";
@@ -153,6 +162,7 @@ async function search(){
  const text=$("address").value.trim();if(text.length<4){state("Saisissez une adresse plus précise.",true);return}
  const id=++requestId;$("search").disabled=true;state("Recherche de l'adresse via l'IGN…");
  if(outline){map.removeLayer(outline);outline=null}
+ if(outlineCurrent){mapCurrent.removeLayer(outlineCurrent);outlineCurrent=null}
  $("parcel").textContent="Recherche en cours";$("found-address").textContent="Recherche en cours";
  try{
   const q=new URLSearchParams({q:text,index:"address",limit:"5"});
