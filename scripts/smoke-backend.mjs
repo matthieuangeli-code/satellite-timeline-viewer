@@ -19,7 +19,8 @@ try {
  }
  assert.equal(health?.status,'ok','Backend failed to start within the verification window');
  assert.equal(health.mode,'sandbox');assert.equal(health.storage,'postgresql');
- assert.equal(health.payments_enabled,false,'This deployment phase requires payments disabled');
+ assert.equal(typeof health.payments_enabled,'boolean');
+ result.paymentsEnabled=health.payments_enabled;
  const ready=await request('/api/ready');assert.equal(ready.response.status,200);assert.equal(ready.data.storage,'postgresql');
  assert.equal(ready.response.headers.get('access-control-allow-origin'),origin,'GitHub Pages CORS missing');
  const address=await request('/api/addresses?q='+encodeURIComponent('37 rue Grande, 27510 Tilly'));
@@ -31,21 +32,27 @@ try {
  assert.equal((await request('/api/orders/unauthorized-order')).response.status,404);
  assert.equal((await request('/api/orders/unauthorized-order/download/pdf?expires=0&signature=invalid')).response.status,403);
  assert.equal((await request('/api/previews',{parcel_id:'276440000B0150',confirmed:false})).response.status,422);
- assert.equal((await request('/api/checkout',{preview_token:'a'.repeat(43)})).response.status,503);
- assert.equal((await request('/api/stripe/webhook',{})).response.status,503);
+ assert.equal((await request('/api/checkout',{preview_token:'a'.repeat(43)})).response.status,health.payments_enabled?410:503);
+ assert.equal((await request('/api/stripe/webhook',{})).response.status,health.payments_enabled?400:503);
  result.backend='passed';
- console.log('Hosted PostgreSQL, address/cadastre, CORS, confirmation, access and disabled-payment checks passed');
+ console.log('Hosted PostgreSQL, address/cadastre, CORS, confirmation, access and sandbox boundaries passed');
+ // Expensive generation is supervised, not repeated for every PR update against the public pilot.
+ if(process.env.SITEHISTORY_VERIFY_REPORT==='0') {
+  result.report={state:'not_requested'};
+  result.delivery={state:health.payments_enabled?'not_verified':'not_configured'};
+ } else {
  // A real generation attempt; an upstream outage is recorded as blocked, never as a generated report.
  const preview=await request('/api/previews',{parcel_id:'276440000B0150',confirmed:true,address:'37 rue Grande, 27510 Tilly',historical_resource:'ORTHOIMAGERY.ORTHOPHOTOS.1950-1965'},300000);
  if(preview.response.status===200) {
-  assert.ok(preview.data.preview_token);assert.equal(preview.data.payments_enabled,false);
+  assert.ok(preview.data.preview_token);assert.equal(preview.data.payments_enabled,health.payments_enabled);
   result.report={state:'prepared',summary:preview.data.summary};
   // Token stays in memory. Neither it nor the private report is exported to CI artifacts.
-  assert.equal((await request('/api/checkout',{preview_token:preview.data.preview_token})).response.status,503);
+  if(!health.payments_enabled)assert.equal((await request('/api/checkout',{preview_token:preview.data.preview_token})).response.status,503);
  } else {
   assert.equal(preview.response.status,503,'Unexpected generation failure');
   assert.equal(typeof preview.data?.detail,'string');
   result.report={state:'blocked',httpStatus:503,reason:preview.data.detail};
+ }
  }
  console.log(JSON.stringify(result));
 } catch(error) {

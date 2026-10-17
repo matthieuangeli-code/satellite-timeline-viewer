@@ -26,6 +26,8 @@ jobs:
         with:
           node-version: "22"
       - name: Verify real hosted API and attempt a real report
+        env:
+          SITEHISTORY_VERIFY_REPORT: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
         run: node scripts/smoke-backend.mjs
       - name: Install browser verification tools
         run: |
@@ -35,7 +37,7 @@ jobs:
         env:
           SITEHISTORY_BASE_URL: https://sitehistory-api-pilot.onrender.com
           SITEHISTORY_SCREENSHOTS: test-results/backend-browser
-          SITEHISTORY_PREVIEW_CHECK: "1"
+          SITEHISTORY_PREVIEW_CHECK: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
         run: node scripts/smoke-sitehistory.mjs
       - name: Preserve results without private reports or tokens
         if: always()

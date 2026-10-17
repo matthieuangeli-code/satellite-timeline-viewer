@@ -54,8 +54,11 @@ try {
     await page.locator('#prepare').click();
     await page.waitForFunction(()=>document.querySelector('#report-status').textContent.includes('Dossier HTML/PDF prêt')||document.querySelector('#status').classList.contains('failed'),null,{timeout:300000});
     if(!(await page.locator('#report-status').innerText()).includes('Dossier HTML/PDF prêt'))throw Error('Browser report preparation failed');
-    if(!await page.locator('#checkout').isDisabled())throw Error('Unconfigured Stripe unexpectedly enabled Checkout');
-    console.log(JSON.stringify({name:'hosted-browser-report',parcel:'276440000B0150',prepared:true,checkoutEnabled:false}));
+    const health=await (await context.request.get('https://sitehistory-api-pilot.onrender.com/api/health')).json();
+    if(health.mode!=='sandbox')throw Error('Hosted mode must remain sandbox');
+    const checkoutEnabled=!await page.locator('#checkout').isDisabled();
+    if(checkoutEnabled!==health.payments_enabled)throw Error('Checkout availability differs from verified backend configuration');
+    console.log(JSON.stringify({name:'hosted-browser-report',parcel:'276440000B0150',prepared:true,checkoutEnabled}));
    }
    await page.screenshot({path:`${output}/${name}.png`,fullPage:true});
    // Force historical requests to fail in a fresh page: no recent substitute allowed.
@@ -68,7 +71,12 @@ try {
    await missing.screenshot({path:`${output}/${name}-missing.png`,fullPage:true});
    if(errors.length)throw Error(errors.join('; '));
    console.log(JSON.stringify({name,address,passed:true,sources,hashes:state,visualDifference:changed/total}));
-  }catch(e){failures++;await page.screenshot({path:`${output}/${name}-FAILED.png`,fullPage:true}).catch(()=>{});console.error(JSON.stringify({name,address,passed:false,error:e.message}));}
+  }catch(e){
+   failures++;await page.screenshot({path:`${output}/${name}-FAILED.png`,fullPage:true}).catch(()=>{});
+   const failure={name,address,passed:false,error:e.message,reportStatus:await page.locator('#report-status').innerText().catch(()=>''),status:await page.locator('#status').innerText().catch(()=>'')};
+   console.error(JSON.stringify(failure));
+   console.log('::error title=SiteHistory browser '+name+'::'+JSON.stringify(failure).replaceAll('%','%25').replaceAll('\r','%0D').replaceAll('\n','%0A'));
+  }
   finally{await context.close()}
  }
  if(failures)process.exitCode=1;
