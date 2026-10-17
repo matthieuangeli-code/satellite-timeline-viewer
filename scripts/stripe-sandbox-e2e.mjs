@@ -53,6 +53,15 @@ async function downloadBytes(paths){
   const r=await context.request.get(api+paths[format]);assert.equal(r.status(),200,'Signed '+format+' download failed');files[format]=await r.body();
  }return files;
 }
+async function browserDownloads(){
+ const files={};for(const format of ['html','pdf']){
+  const event=page.waitForEvent('download');
+  await page.getByRole('link',{name:'Télécharger '+format.toUpperCase(),exact:true}).click();
+  const download=await event;assert.equal(await download.failure(),null,'Browser download failed');
+  const stream=await download.createReadStream();const chunks=[];for await(const chunk of stream)chunks.push(chunk);
+  files[format]=Buffer.concat(chunks);
+ }return files;
+}
 try {
  browser=await chromium.launch({headless:true,args:['--no-sandbox']});
  context=await browser.newContext({viewport:{width:1360,height:1000}});page=await context.newPage();
@@ -106,7 +115,7 @@ try {
  await page.waitForFunction(()=>document.querySelector('#candidates').options.length>1,null,{timeout:120000});
  assert.equal(await page.locator('#delivery a').count(),2);note('real_test_payment_and_signed_webhook_delivery');
  stage='downloads';const signed=state.data.downloads;for(const path of Object.values(signed))protect(path);
- const files=await downloadBytes(signed);assert.ok(files.pdf.subarray(0,5).toString()==='%PDF-');
+ const files=await browserDownloads();assert.ok(files.pdf.subarray(0,5).toString()==='%PDF-');
  const html=files.html.toString();assert.ok(html.includes('276440000B0150'));assert.ok((html.match(/data:image\/jpeg;base64,/g)||[]).length>=2);
  const text=spawnSync('pdftotext',['-','-'],{input:files.pdf,maxBuffer:3000000});assert.equal(text.status,0,'PDF could not be read');assert.ok(text.stdout.toString().includes('276440000B0150'));
  assert.ok(text.stdout.toString().includes('Indicateurs environnementaux'));
