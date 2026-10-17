@@ -6,12 +6,16 @@ on:
       - ".github/workflows/demo-smoke.yml"
       - "scripts/smoke-sitehistory.mjs"
       - "docs/demo.html"
+      - "docs/index.html"
+      - "docs/sources.html"
       - "docs/assets/**"
   pull_request:
     paths:
       - ".github/workflows/demo-smoke.yml"
       - "scripts/smoke-sitehistory.mjs"
       - "docs/demo.html"
+      - "docs/index.html"
+      - "docs/sources.html"
       - "docs/assets/**"
   workflow_dispatch:
 permissions:

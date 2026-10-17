@@ -70,6 +70,7 @@ async function verify(){
  }catch(e){if(ticket===rendering){unavailable(0);$('comparison-state').textContent='Comparaison non validée : '+e.message+'. Essayez une autre période ou un autre cadrage.'}}
 }
 const schedule=()=>{clearTimeout(debounce);debounce=setTimeout(verify,250)};
+function updateOfficial(){const p=maps[0].getCenter(),old=$('era').value,recent=layers.find(l=>l.current);const params={mode:'doubleMap',x:p.lng,y:p.lat,z:maps[0].getZoom()};if(old&&recent){params.layer1=old;params.layer2=recent.id}$('official').href='https://remonterletemps.ign.fr/comparer/basic?'+new URLSearchParams(params)}
 function imagery(){
  rendering++;for(let i=0;i<2;i++){if(raster[i])maps[i].removeLayer(raster[i]);raster[i]=null;unavailable(i,'Vérification de l’image IGN…')}
  const old=layers.find(l=>l.id===$('era').value),recent=layers.find(l=>l.current);if(!old||!recent){unavailable(0);return}
@@ -81,7 +82,7 @@ function imagery(){
   raster[i]=new Layer('',{minZoom:Math.min(...zs),maxZoom:Math.max(...zs),crossOrigin:'anonymous',attribution:'© IGN / Géoplateforme',updateWhenIdle:true,keepBuffer:0}).addTo(maps[i]);
   raster[i].on('loading',()=>{rendering++;unavailable(i,'Vérification de l’image IGN…')});raster[i].on('load',schedule);raster[i].on('tileerror',()=>{unavailable(i);$('comparison-state').textContent='Image manquante : comparaison non validée. Aucune image récente n’est substituée.'});
  }
- const p=maps[0].getCenter();$('official').href='https://remonterletemps.ign.fr/comparer/basic?'+new URLSearchParams({layer1:old.id,layer2:recent.id,mode:'doubleMap',x:p.lng,y:p.lat,z:maps[0].getZoom()});schedule();
+ updateOfficial();schedule();
 }
 async function probe(l,p){
  const z=Math.min(l.max,17),n=2**z,x=Math.floor((p.lng+180)/360*n),y=Math.floor((1-Math.asinh(Math.tan(p.lat*Math.PI/180))/Math.PI)/2*n);
@@ -119,7 +120,7 @@ try{
  if(!window.L)throw Error('Bibliothèque cartographique indisponible');
  maps=[L.map('map-old',{zoomAnimation:false,fadeAnimation:false}),L.map('map-new',{zoomAnimation:false,fadeAnimation:false})];
  maps.forEach(m=>m.setView([49.15,1.53],17));let syncing=false;
- maps.forEach((m,i)=>{m.on('move',()=>{if(syncing)return;syncing=true;maps[1-i].setView(m.getCenter(),m.getZoom(),{animate:false});syncing=false});m.on('movestart',()=>{rendering++;unavailable(0,'Cadrage en cours…');unavailable(1,'Cadrage en cours…')});m.on('moveend',schedule);m.on('click',e=>point(e.latlng.lng,e.latlng.lat))});
+ maps.forEach((m,i)=>{m.on('move',()=>{if(syncing)return;syncing=true;maps[1-i].setView(m.getCenter(),m.getZoom(),{animate:false});syncing=false});m.on('movestart',()=>{rendering++;unavailable(0,'Cadrage en cours…');unavailable(1,'Cadrage en cours…')});m.on('moveend',()=>{updateOfficial();schedule()});m.on('click',e=>point(e.latlng.lng,e.latlng.lat))});
  layers=await catalogue();periods();status('Catalogue IGN vérifié. Choisissez votre adresse ou référence.');await search();
 }catch(e){status('Exploration indisponible : '+e.message+'. Réessayez ou consultez directement IGN.',true)}
 })();
