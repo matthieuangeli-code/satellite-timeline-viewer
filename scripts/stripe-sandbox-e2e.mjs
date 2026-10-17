@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process';
 const api='https://sitehistory-api-pilot.onrender.com',front='https://matthieuangeli-code.github.io/satellite-timeline-viewer';
 const out='test-results/stripe-sandbox';await mkdir(out,{recursive:true});
 const result={mode:'sandbox',state:'running',checks:[],startedAt:new Date().toISOString()};
+const testEmail='sitehistory-sandbox-'+Date.now()+'@example.com';
 const protectedValues=new Set();let stage='health',page,browser,context,order,preview,checkId;
 const protect=v=>{if(v)protectedValues.add(v);return v};
 function safe(value){let text=String(value);for(const v of protectedValues)text=text.replaceAll(v,'[REDACTED]');return text.replace(/https?:\/\/[^\s]+/g,'[URL]').split('\n')[0].slice(0,400);}
@@ -25,7 +26,7 @@ async function input(selectors,value,required=true){
  for(let attempt=0;attempt<(required?40:1);attempt++){
   for(const frame of page.frames()){
    const field=frame.locator(selectors).first();
-   if(await field.isVisible().catch(()=>false)){await field.fill(value);return true;}
+   if(await field.isVisible().catch(()=>false)&&await field.isEditable().catch(()=>false)){await field.fill(value);return true;}
   }
   if(required)await pause(500);
  }
@@ -33,7 +34,14 @@ async function input(selectors,value,required=true){
  return false;
 }
 async function card(number){
- await input('input[name="email"],input[type="email"]','sitehistory-sandbox@example.com',false);
+ await input('input[name="email"],input[type="email"]',testEmail,false);
+ const hasCard=async()=>{for(const frame of page.frames())if(await frame.locator('input[name="cardNumber"],input[autocomplete="cc-number"]').first().isVisible().catch(()=>false))return true;return false;};
+ if(!await hasCard()){
+  const next=page.getByRole('button',{name:/^Continue$|^Continuer$|^Fortsett$/i}).first();
+  if(await next.isVisible().catch(()=>false)){await next.click();await pause(1000);}
+  const guest=page.getByText(/pay without link|continue without link|continue as guest|payer sans link/i).first();
+  if(await guest.isVisible().catch(()=>false)){await guest.click();await pause(1000);}
+ }
  await input('input[name="cardNumber"],input[autocomplete="cc-number"]',number);
  await input('input[name="cardExpiry"],input[autocomplete="cc-exp"]','12/30');
  await input('input[name="cardCvc"],input[autocomplete="cc-csc"]','123');
@@ -149,7 +157,8 @@ try {
 } catch(error){
  result.state='failed';result.stage=stage;result.error=safe(error.message);process.exitCode=1;
  if(page){
-  result.controls=await page.locator('input,select,button').evaluateAll(nodes=>nodes.filter(n=>n.getBoundingClientRect().width).map(n=>({tag:n.tagName,name:n.name,type:n.type,id:n.id}))).catch(()=>[]);
+  result.controls=await page.locator('input,select,button').evaluateAll(nodes=>nodes.filter(n=>n.getBoundingClientRect().width).map(n=>({tag:n.tagName,name:n.name,type:n.type,id:n.id,text:n.tagName==='BUTTON'?n.innerText.slice(0,100):undefined}))).catch(()=>[]);
+  result.alerts=await page.locator('[role="alert"],.FieldError,.PaymentMethodForm-error').allTextContents().catch(()=>[]);
   await page.screenshot({path:out+'/failure.png'}).catch(()=>{});
  }
  if(checkId)await github('/check-runs/'+checkId,'PATCH',{status:'completed',conclusion:'failure',output:{title:'Persistence check failed',summary:safe(error.message)}}).catch(()=>{});
