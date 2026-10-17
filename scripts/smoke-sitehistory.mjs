@@ -49,6 +49,14 @@ try {
    const images=[];for(const id of ['map-old','map-new'])images.push(PNG.sync.read(await page.locator('#'+id).screenshot({path:`${output}/${name}-${id}.png`})));
    let changed=0,total=0;for(let y=60;y<images[0].height-40;y+=3)for(let x=40;x<images[0].width-30;x+=3){const j=(y*images[0].width+x)*4;let delta=0;for(let k=0;k<3;k++)delta+=Math.abs(images[0].data[j+k]-images[1].data[j+k]);if(delta>36)changed++;total++}
    if(!total||changed/total<.01)throw Error('Visible screenshots insufficiently different');
+   if(process.env.SITEHISTORY_PREVIEW_CHECK==='1'&&!mobile&&index===0) {
+    if(await page.locator('#prepare').isDisabled())throw Error('Confirmed parcel cannot start report preparation');
+    await page.locator('#prepare').click();
+    await page.waitForFunction(()=>document.querySelector('#report-status').textContent.includes('Dossier HTML/PDF prêt')||document.querySelector('#status').classList.contains('failed'),null,{timeout:300000});
+    if(!(await page.locator('#report-status').innerText()).includes('Dossier HTML/PDF prêt'))throw Error('Browser report preparation failed');
+    if(!await page.locator('#checkout').isDisabled())throw Error('Unconfigured Stripe unexpectedly enabled Checkout');
+    console.log(JSON.stringify({name:'hosted-browser-report',parcel:'276440000B0150',prepared:true,checkoutEnabled:false}));
+   }
    await page.screenshot({path:`${output}/${name}.png`,fullPage:true});
    // Force historical requests to fail in a fresh page: no recent substitute allowed.
    const missing=await context.newPage();

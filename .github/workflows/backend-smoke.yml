@@ -4,12 +4,14 @@ on:
     paths:
       - ".github/workflows/backend-smoke.yml"
       - "scripts/smoke-backend.mjs"
+      - "scripts/smoke-sitehistory.mjs"
       - "docs/assets/config.js"
   push:
     branches: [main]
     paths:
       - ".github/workflows/backend-smoke.yml"
       - "scripts/smoke-backend.mjs"
+      - "scripts/smoke-sitehistory.mjs"
       - "docs/assets/config.js"
   workflow_dispatch:
 permissions:
@@ -33,6 +35,7 @@ jobs:
         env:
           SITEHISTORY_BASE_URL: https://sitehistory-api-pilot.onrender.com
           SITEHISTORY_SCREENSHOTS: test-results/backend-browser
+          SITEHISTORY_PREVIEW_CHECK: "1"
         run: node scripts/smoke-sitehistory.mjs
       - name: Preserve results without private reports or tokens
         if: always()
