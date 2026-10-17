@@ -68,15 +68,18 @@ try {
  const health=await request('/api/health');assert.equal(health.data.mode,'sandbox');assert.equal(health.data.payments_enabled,true,'Stripe test not enabled');assert.ok(health.data.instance,'Restart marker missing');
  note('sandbox_enabled');
  stage='confirmed_parcel';
+ // Buffer the real response before navigation; the browser can otherwise discard
+ // the fetch body before an asynchronous response listener reads it.
+ await page.route(api+'/api/checkout',async route=>{
+  const response=await route.fetch();const data=await response.json();result.checkoutHttpStatus=response.status();
+  if(response.ok()){order=data;protect(order.order_token);protect(order.url);}else result.checkoutFailure=safe(data.detail);
+  await route.fulfill({response});
+ });
  page.on('response',async response=>{
   try{
    if(response.url()===api+'/api/previews'){
     const data=await response.json();result.previewHttpStatus=response.status();
     if(response.ok()){preview=data;protect(preview.preview_token);}else result.previewFailure=safe(data.detail);
-   }
-   if(response.url()===api+'/api/checkout'){
-    const data=await response.json();result.checkoutHttpStatus=response.status();
-    if(response.ok()){order=data;protect(order.order_token);protect(order.url);}else result.checkoutFailure=safe(data.detail);
    }
   }catch{}
  });
