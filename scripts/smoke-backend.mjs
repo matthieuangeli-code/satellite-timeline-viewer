@@ -36,6 +36,11 @@ try {
  assert.equal((await request('/api/stripe/webhook',{})).response.status,health.payments_enabled?400:503);
  result.backend='passed';
  console.log('Hosted PostgreSQL, address/cadastre, CORS, confirmation, access and sandbox boundaries passed');
+ // Expensive generation is supervised, not repeated for every PR update against the public pilot.
+ if(process.env.SITEHISTORY_VERIFY_REPORT==='0') {
+  result.report={state:'not_requested'};
+  result.delivery={state:health.payments_enabled?'not_verified':'not_configured'};
+ } else {
  // A real generation attempt; an upstream outage is recorded as blocked, never as a generated report.
  const preview=await request('/api/previews',{parcel_id:'276440000B0150',confirmed:true,address:'37 rue Grande, 27510 Tilly',historical_resource:'ORTHOIMAGERY.ORTHOPHOTOS.1950-1965'},300000);
  if(preview.response.status===200) {
@@ -47,6 +52,7 @@ try {
   assert.equal(preview.response.status,503,'Unexpected generation failure');
   assert.equal(typeof preview.data?.detail,'string');
   result.report={state:'blocked',httpStatus:503,reason:preview.data.detail};
+ }
  }
  console.log(JSON.stringify(result));
 } catch(error) {
