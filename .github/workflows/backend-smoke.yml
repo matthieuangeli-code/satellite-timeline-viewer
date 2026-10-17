@@ -16,6 +16,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: sitehistory-live-data-checks
+  cancel-in-progress: false
 jobs:
   hosted-sandbox:
     runs-on: ubuntu-latest

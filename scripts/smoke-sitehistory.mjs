@@ -73,7 +73,7 @@ try {
    console.log(JSON.stringify({name,address,passed:true,sources,hashes:state,visualDifference:changed/total}));
   }catch(e){
    failures++;await page.screenshot({path:`${output}/${name}-FAILED.png`,fullPage:true}).catch(()=>{});
-   const failure={name,address,passed:false,error:e.message,reportStatus:await page.locator('#report-status').innerText().catch(()=>''),status:await page.locator('#status').innerText().catch(()=>'')};
+   const failure={name,address,passed:false,error:e.message,reportStatus:await page.locator('#report-status').innerText().catch(()=>''),status:await page.locator('#status').innerText().catch(()=>''),comparisonStatus:await page.locator('#comparison-state').innerText().catch(()=>''),historicalStatus:await page.locator('#old-unavailable').innerText().catch(()=>'')};
    console.error(JSON.stringify(failure));
    console.log('::error title=SiteHistory browser '+name+'::'+JSON.stringify(failure).replaceAll('%','%25').replaceAll('\r','%0D').replaceAll('\n','%0A'));
   }
