@@ -70,11 +70,13 @@ try {
  stage='confirmed_parcel';
  page.on('response',async response=>{
   try{
-   if(response.url()===api+'/api/previews'&&response.ok()){
-    preview=await response.json();protect(preview.preview_token);
+   if(response.url()===api+'/api/previews'){
+    const data=await response.json();result.previewHttpStatus=response.status();
+    if(response.ok()){preview=data;protect(preview.preview_token);}else result.previewFailure=safe(data.detail);
    }
-   if(response.url()===api+'/api/checkout'&&response.ok()){
-    order=await response.json();protect(order.order_token);protect(order.url);
+   if(response.url()===api+'/api/checkout'){
+    const data=await response.json();result.checkoutHttpStatus=response.status();
+    if(response.ok()){order=data;protect(order.order_token);protect(order.url);}else result.checkoutFailure=safe(data.detail);
    }
   }catch{}
  });
