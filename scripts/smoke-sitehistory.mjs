@@ -71,7 +71,12 @@ try {
    await missing.screenshot({path:`${output}/${name}-missing.png`,fullPage:true});
    if(errors.length)throw Error(errors.join('; '));
    console.log(JSON.stringify({name,address,passed:true,sources,hashes:state,visualDifference:changed/total}));
-  }catch(e){failures++;await page.screenshot({path:`${output}/${name}-FAILED.png`,fullPage:true}).catch(()=>{});console.error(JSON.stringify({name,address,passed:false,error:e.message}));}
+  }catch(e){
+   failures++;await page.screenshot({path:`${output}/${name}-FAILED.png`,fullPage:true}).catch(()=>{});
+   const failure={name,address,passed:false,error:e.message,reportStatus:await page.locator('#report-status').innerText().catch(()=>''),status:await page.locator('#status').innerText().catch(()=>'')};
+   console.error(JSON.stringify(failure));
+   console.log('::error title=SiteHistory browser '+name+'::'+JSON.stringify(failure).replaceAll('%','%25').replaceAll('\r','%0D').replaceAll('\n','%0A'));
+  }
   finally{await context.close()}
  }
  if(failures)process.exitCode=1;
