@@ -159,6 +159,9 @@ try {
  if(page){
   result.controls=await page.locator('input,select,button').evaluateAll(nodes=>nodes.filter(n=>n.getBoundingClientRect().width).map(n=>({tag:n.tagName,name:n.name,type:n.type,id:n.id,text:n.tagName==='BUTTON'?n.innerText.slice(0,100):undefined}))).catch(()=>[]);
   result.alerts=await page.locator('[role="alert"],.FieldError,.PaymentMethodForm-error').allTextContents().catch(()=>[]);
+  if(page.url().startsWith('https://checkout.stripe.com/')){
+   result.screenText=(await page.locator('body').innerText().catch(()=>'')).slice(0,2500).replaceAll(testEmail,'[test email]').replace(/https?:\/\/[^\s]+/g,'[URL]').replace(/cs_test_[a-zA-Z0-9_-]+/g,'[test session]');
+  }
   await page.screenshot({path:out+'/failure.png'}).catch(()=>{});
  }
  if(checkId)await github('/check-runs/'+checkId,'PATCH',{status:'completed',conclusion:'failure',output:{title:'Persistence check failed',summary:safe(error.message)}}).catch(()=>{});
