@@ -9,6 +9,23 @@ const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 const addresses=['37 rue Grande, 27510 Tilly','1 place de la Comédie, 69001 Lyon','1 place du Bouffay, 44000 Nantes'];
 let failures=0;
 try {
+ for(const mobile of [false,true]) {
+  const page=await browser.newPage({viewport:{width:mobile?390:1360,height:mobile?844:1000}});
+  try {
+   await page.goto(base+'/index.html',{waitUntil:'domcontentloaded'});
+   if(!await page.locator('#dossier').isVisible())throw Error('Paid report explanation missing');
+   const offer=await page.locator('#dossier').innerText();
+   if(!offer.includes('HTML autonome')||!offer.includes('PDF')||!offer.includes('gratuitement'))throw Error('Free exploration / paid export distinction missing');
+   if(await page.locator('a[href*="buy.stripe.com"]').count())throw Error('Standalone payment bypasses parcel confirmation');
+   if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth))throw Error('Homepage overflows viewport');
+   await page.screenshot({path:`${output}/homepage-${mobile?'mobile':'desktop'}.png`,fullPage:true});
+   await page.locator('.offer a').click();
+   await page.locator('#official').waitFor({state:'visible'});
+   if(!String(await page.locator('#official').getAttribute('href')).startsWith('https://remonterletemps.ign.fr/'))throw Error('Official IGN link missing');
+   console.log(JSON.stringify({name:`homepage-${mobile?'mobile':'desktop'}`,passed:true}));
+  } catch(e) {failures++;console.error(JSON.stringify({name:'homepage',mobile,passed:false,error:e.message}));}
+  finally {await page.close();}
+ }
  for(const mobile of [false,true]) for(const [index,address] of addresses.entries()) {
   const name=`${mobile?'mobile':'desktop'}-${index+1}`;
   const context=await browser.newContext({viewport:{width:mobile?390:1360,height:mobile?844:1000}});

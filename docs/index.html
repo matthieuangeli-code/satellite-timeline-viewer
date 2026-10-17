@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SiteHistory France — Chaque parcelle a une histoire</title>
-<meta name="description" content="L'histoire aérienne, les références cadastrales et le contexte environnemental d'une parcelle française, réunis dans un dossier exploratoire.">
+<meta name="description" content="Explorez gratuitement votre parcelle et les vues IGN. Découvrez le dossier à 4,90 € : synthèse cadastrale, images cadrées et sources environnementales en HTML et PDF. Commandes pas encore ouvertes.">
 <meta name="theme-color" content="#173e35">
 <meta property="og:title" content="SiteHistory France — Chaque parcelle a une histoire">
 <meta property="og:description" content="Explorez les archives aériennes et les informations publiques sur votre terrain.">
@@ -64,6 +64,7 @@ input[type=range]{display:block;width:100%;cursor:ew-resize;accent-color:#2c664b
 .pricebox li{font-size:14px;padding:8px 0;font-weight:650;color:#41644e}.pricebox li:before{content:"✓";color:#348951;margin-right:11px}
 .pricebox .button{background:#173d34;color:#fff;width:100%}.pricebox .disclaimer{font-size:11px;color:#7b9080;margin:16px 0 0}
 .test{font-size:12px;line-height:1.6;border:1px solid #eed59c;background:#fff7e3;color:#7e5c26;border-radius:12px;padding:14px 16px;margin:20px 0 0}
+.offer-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}.offer{border:1px solid var(--line);background:white;border-radius:19px;padding:30px}.offer.full{border:2px solid #568263;background:#f2f7ec}.offer h3{font:400 30px var(--serif);margin:12px 0}.offer p,.offer li{font-size:14px;line-height:1.75;color:#526e5a}.offer ul{padding-left:20px}.offer .button{background:var(--forest);color:white}.report-outline{margin:0;padding-left:24px;display:grid;gap:20px}.report-outline li{padding-left:6px;color:#526e5a;font-size:14px;line-height:1.6}.report-outline strong{display:block;color:var(--ink);font-size:16px}.source-link{display:inline-flex;margin:12px 0;font-weight:750;color:#285e44}.offer-note{max-width:840px;margin:24px auto 0;font-size:14px;color:#526e5a;line-height:1.8}.launch-state{border-left:4px solid #ae7a28;background:#fff7e3;color:#644c27;padding:16px 20px;font-size:14px;line-height:1.7;margin-top:24px}
 .faq{max-width:850px;margin:0 auto}.faq details{border-bottom:1px solid #dce7d9}.faq summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:20px;padding:22px 0;font-size:16px;font-weight:750}.faq summary::-webkit-details-marker{display:none}.faq summary:after{content:"+";color:#578360;font-size:23px;font-weight:400}.faq details[open] summary:after{content:"−"}.faq details p{color:#6d8373;font-size:14px;line-height:1.75;padding:0 0 22px;margin:0}
 .bottom{background:#183d34;color:#fff;padding:64px 0}.bottomgrid{display:flex;align-items:center;justify-content:space-between;gap:25px}.bottom h2{margin:0;font-size:clamp(30px,3.8vw,46px)}.bottom p{color:#bdd2c0;font-size:14px;margin:12px 0 0}
 footer{background:#102f29;color:#abc5b2;padding:33px 0;font-size:12px;line-height:1.7}.foot{display:flex;align-items:flex-start;justify-content:space-between;gap:30px;flex-wrap:wrap}.foot>div:first-child{max-width:600px}footer strong{color:#f6fff4}.footnav{display:flex;gap:17px;flex-wrap:wrap}.footnav a{text-decoration:none}.footnav a:hover{text-decoration:underline}
@@ -71,6 +72,7 @@ footer{background:#102f29;color:#abc5b2;padding:33px 0;font-size:12px;line-heigh
 @media(max-width:750px){.wrap{width:calc(100% - 36px)}.nav{height:66px}.brand{font-size:18px}.navlinks a:not(.pillbutton){display:none}.pillbutton{padding:11px 12px;font-size:12px}
 .hero .wrap{grid-template-columns:1fr;padding:64px 0 72px;gap:44px}.hero h1{font-size:clamp(48px,10vw,69px)}.viewer{transform:none;max-width:550px}.benefits{gap:10px 19px}.section{padding:69px 0}.cards,.steps,.splitgrid,.pricegrid{grid-template-columns:1fr}.card{min-height:auto}.pricegrid{gap:29px}.pricebox{padding:25px}.steps{gap:13px}.step{padding:0}.bottomgrid{align-items:flex-start;flex-direction:column}.intro{margin-bottom:34px}}
 @media(max-width:405px){.brand b{display:none}.actions .button{width:100%}.amount{font-size:56px}}
+@media(max-width:750px){.offer-grid{grid-template-columns:1fr}.offer{padding:24px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.button,.pillbutton{transition:none}}
 </style>
 </head>
@@ -117,7 +119,8 @@ footer{background:#102f29;color:#abc5b2;padding:33px 0;font-size:12px;line-heigh
 <p class="eyebrow">Une nouvelle lecture de votre terrain</p>
 <h1>Chaque parcelle a une histoire.<br><em>Retrouvez-la.</em></h1>
 <p class="lede">Photographies aériennes anciennes, cadastre et principaux indices environnementaux publics : les informations d'un terrain réunies dans un seul dossier exploratoire.</p>
-<div class="actions"><a class="button bright" href="./demo.html">Essayer gratuitement sur une adresse ↗</a><a class="button line" href="#tarif">Consulter l'offre pilote</a></div>
+<div class="actions"><a class="button bright" href="./demo.html">Explorer ma parcelle gratuitement ↗</a><a class="button line" href="#dossier">Que contient le dossier à 4,90 € ?</a></div>
+<p style="color:#c2d7cd;font-size:13px;line-height:1.7;margin-top:20px">La démo est accessible maintenant. Le dossier HTML + PDF est en préparation ; les commandes ne sont pas encore ouvertes.</p>
 <div class="benefits"><span><b>✓</b> France métropolitaine</span><span><b>✓</b> Données publiques</span><span><b>✓</b> Sans abonnement</span></div>
 </div>
 <div>
@@ -141,44 +144,50 @@ footer{background:#102f29;color:#abc5b2;padding:33px 0;font-size:12px;line-heigh
 <div class="cards">
 <article class="card"><div class="symbol">▧</div><h3>Retrouvez la parcelle</h3><p>Recherchez une adresse, repérez sa géométrie cadastrale et confirmez la bonne parcelle avant toute interprétation.</p></article>
 <article class="card"><div class="symbol">◷</div><h3>Remontez dans le temps</h3><p>Découvrez les époques de photographies aériennes IGN disponibles et comparez leur évolution visuelle.</p></article>
-<article class="card"><div class="symbol">◎</div><h3>Explorez son contexte</h3><p>Rassemblez les principales données environnementales publiques disponibles à proximité de votre terrain.</p></article>
+<article class="card"><div class="symbol">◎</div><h3>Conservez un dossier sourcé</h3><p>Le dossier prévu rassemble les informations cadastrales, les images et les résultats environnementaux disponibles, avec leurs sources et leurs limites. Livraison HTML et PDF en préparation.</p></article>
 </div>
 </section>
 
 <section class="section light-section" id="demo">
 <div class="wrap splitgrid">
-<div class="explain"><span class="kicker">Avant / après</span><h2>Ce qui a changé devient plus facile à voir.</h2><p>Comprendre l'histoire visible d'un lieu ne devrait pas demander des heures de recherches dispersées. Comparez les images, documentez vos observations, puis poursuivez l'analyse à votre rythme.</p>
+<div class="explain"><span class="kicker">Les images restent accessibles à la source</span><h2>Explorez gratuitement. Gardez ensuite une trace documentée.</h2><p>La démo permet de rechercher une adresse, de confirmer une parcelle et de comparer deux époques disponibles. Vous pouvez aussi ouvrir directement le comparateur officiel IGN.</p>
 <p><a class="button" style="background:#173d34;color:white;margin:4px 0 18px" href="./demo.html">Lancer la démo avec les vraies images IGN ↗</a></p>
-<ul class="checks"><li>Parcourir les périodes d'images disponibles</li><li>Repérer la parcelle sur les couches cadastrales</li><li>Consulter des indicateurs publics de risques</li><li>Exporter les observations et références</li></ul></div>
+<a class="source-link" href="https://remonterletemps.ign.fr/" target="_blank" rel="noopener noreferrer">Consulter directement Remonter le temps — IGN ↗</a>
+<ul class="checks"><li>Adresse, référence cadastrale ou clic sur la carte</li><li>Parcelle choisie et confirmée par vous</li><li>Deux vues IGN distinctes lorsque disponibles</li><li>Exploration sans compte et sans paiement</li></ul></div>
 <div class="interactive">
-<div class="map" id="compare" style="--split:50%">
-<svg viewBox="0 0 600 470" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#land"/></svg>
-<svg viewBox="0 0 600 470" preserveAspectRatio="xMidYMid slice" class="old" aria-hidden="true"><use href="#land-old"/></svg>
-<div class="splitline"></div><span class="mapbadge a">VUE ANCIENNE</span><span class="mapbadge b">VUE RÉCENTE</span>
-</div>
-<div class="sliderlabel"><label for="slider">Faites glisser pour comparer</label><span id="percent">50 / 50</span></div>
-<input id="slider" type="range" min="5" max="95" value="50" step="1" aria-label="Proportion de l'illustration historique affichée">
-<p class="caption">Démo graphique interactive, sans données géographiques réelles. <a href="./demo.html">Essayer la carte IGN sur une vraie adresse ↗</a> La couverture et les dates précises varient selon la parcelle.</p>
+<h3>Le contenu du dossier prévu</h3>
+<ol class="report-outline"><li><strong>Votre parcelle</strong>Référence, commune, surface cadastrale si fournie et géométrie du terrain.</li><li><strong>Deux époques d’imagerie</strong>Vues sur une même emprise, contours cadastraux, périodes et identifiants IGN.</li><li><strong>Le contexte environnemental</strong>Résultats publics disponibles, périmètre de recherche et état de chaque source.</li><li><strong>Des observations factuelles</strong>Constats documentaires, sans diagnostic automatique de pollution ou de changement.</li><li><strong>Les sources et les limites</strong>Date du dossier, références consultées et informations manquantes.</li></ol>
+<p class="caption">Structure du rapport en préparation. Cette présentation ne constitue pas un dossier réel.</p>
 </div>
 </div></section>
 
+<section class="section wrap" id="dossier">
+<div class="intro"><span class="kicker">Ce qu’apporte le dossier</span><h2>De la consultation à un document que vous pouvez conserver.</h2><p>Les données publiques sont consultables gratuitement chez leurs producteurs. Les 4,90 € prévus rémunèrent leur rassemblement, leur mise en forme et la préparation du dossier pour la parcelle confirmée.</p></div>
+<div class="offer-grid">
+<article class="offer"><span class="tag">DISPONIBLE MAINTENANT</span><h3>Explorer — gratuit</h3><ul><li>Rechercher et confirmer sa parcelle.</li><li>Comparer les photographies IGN disponibles à l’écran.</li><li>Changer de période, zoomer et afficher les contours.</li><li>Ouvrir la source officielle IGN pour poursuivre la consultation.</li></ul><a class="button" href="./demo.html">Essayer sans compte ↗</a></article>
+<article class="offer full"><span class="tag">DOSSIER EN PRÉPARATION · 4,90 €</span><h3>Rassembler et conserver</h3><ul><li>Une fiche cadastrale et une carte de localisation réunies dans le dossier.</li><li>Des vues historique et récente préparées sur la même emprise, avec le terrain surligné.</li><li>Une synthèse des recherches Géorisques intégrées : résultats, nombres et distances lorsqu’ils sont calculables.</li><li>Des références, périodes et dates de consultation pour retrouver les sources.</li><li>Un HTML autonome avec images intégrées et un PDF à télécharger et à partager.</li></ul><p><strong>Paiement unique prévu, sans abonnement ni compte utilisateur.</strong> Aucun achat réel n’est ouvert à ce stade.</p></article>
+</div>
+<p class="offer-note">Selon les sources disponibles : CASIAS, SIS, ICPE, cavités, mouvements de terrain, argiles et inondation. Une recherche réussie sans résultat, une source indisponible, une requête en échec et une donnée non intégrée sont distinguées. Une absence de résultat ne prouve jamais une absence de risque.</p>
+<div class="launch-state"><strong>Où en est la version de test ?</strong> L’exploration gratuite est en ligne. Le serveur de génération et la livraison sont en cours de raccordement. Le paiement sandbox sera testé avant l’ouverture des commandes ; aucun paiement réel n’est activé.</div>
+</section>
+
 <section class="section wrap" id="fonctionnement">
-<div class="intro"><span class="kicker">Comment ça marche</span><h2>Trois étapes. Un seul dossier.</h2><p>Un parcours conçu pour aider à la première recherche, sans se substituer à une étude professionnelle.</p></div>
+<div class="intro"><span class="kicker">Comment ça marche</span><h2>Choisir, vérifier, télécharger.</h2><p>Le parcours du dossier prévu, après raccordement du serveur et validation du paiement test.</p></div>
 <div class="steps">
 <div class="step"><div class="stepid">01</div><h3>Localisez</h3><p>Indiquez une adresse ou référence cadastrale et vérifiez visuellement le terrain sélectionné.</p></div>
-<div class="step"><div class="stepid">02</div><h3>Explorez</h3><p>Consultez les archives aériennes disponibles et les informations publiques utiles.</p></div>
-<div class="step"><div class="stepid">03</div><h3>Conservez</h3><p>Le serveur de rapports prépare les exports HTML et PDF lorsqu’il est connecté. L’exploration publique reste gratuite.</p></div>
+<div class="step"><div class="stepid">02</div><h3>Vérifiez le contenu</h3><p>Avant de proposer un paiement, le serveur doit vérifier les données essentielles et préparer les exports. En cas de données essentielles indisponibles, la commande reste bloquée.</p></div>
+<div class="step"><div class="stepid">03</div><h3>Téléchargez</h3><p>Après vérification du paiement côté serveur, récupérez le HTML et le PDF par des liens temporaires. Ce parcours de livraison est encore en préparation.</p></div>
 </div></section>
 
 <section class="section price-section" id="tarif">
 <div class="wrap pricegrid">
-<div class="pricecopy"><span class="kicker">Simple, ponctuel, transparent</span><h2>Une réponse utile sur un terrain, sans abonnement.</h2><p>Nous préparons une offre pilote à paiement unique. Pas de formule complexe ni d'abonnement à oublier.</p>
-<p>L’exploration est gratuite. Le parcours de dossier nécessite un backend connecté et Stripe en mode test ; aucune commande réelle n’est ouverte.</p>
+<div class="pricecopy"><span class="kicker">Simple, ponctuel, transparent</span><h2>Un dossier prêt à relire et à partager.</h2><p>Évitez de reconstituer vos recherches à partir d’onglets et de captures dispersés. Le dossier prévu rassemble les éléments consultés, leur provenance et leurs limites dans deux formats complémentaires.</p>
+<p>Le HTML conserve les images dans un fichier autonome. Le PDF permet une lecture et une impression paginées. Le document aide à préparer vos questions avant une visite ou un échange avec un professionnel.</p>
 </div>
 <div class="pricebox"><span class="tag">OFFRE PILOTE ENVISAGÉE</span><div class="amount">4,90 € <small>/ dossier</small></div><p>Dossier historique exploratoire d'une parcelle. Prix indicatif pour le lancement, non facturé pour les tests actuels.</p>
-<ul><li>Parcelle cadastrale identifiée et vérifiée</li><li>Archives aériennes disponibles</li><li>Informations environnementales publiques</li><li>Dossier HTML exportable et traçable</li></ul>
+<ul><li>Parcelle sélectionnée et confirmée par vous</li><li>Vues IGN cadrées et contours cadastraux</li><li>Résultats environnementaux disponibles et sourcés</li><li>HTML autonome + PDF téléchargeable</li><li>Dates, références et données manquantes explicites</li></ul>
 <a class="button" href="./demo.html">Choisir une parcelle avant le dossier ↗</a>
-<div class="test"><strong>Mode démonstration uniquement.</strong> Aucun paiement indépendant de votre parcelle n’est proposé. Le paiement test sera disponible dans l’exploration une fois le serveur connecté et les fichiers vérifiés.</div>
+<div class="test"><strong>Commandes pas encore ouvertes.</strong> L’exploration est gratuite et accessible maintenant. La livraison et le paiement test sont en préparation. Aucun débit réel ne peut être effectué.</div>
 <p class="disclaimer">SiteHistory n'est ni une étude de pollution des sols, ni une expertise immobilière, ni une vérification juridique de conformité.</p>
 </div>
 </div></section>
@@ -186,6 +195,8 @@ footer{background:#102f29;color:#abc5b2;padding:33px 0;font-size:12px;line-heigh
 <section class="section wrap">
 <div class="intro"><span class="kicker">Questions fréquentes</span><h2>Ce qu'il faut savoir.</h2></div>
 <div class="faq">
+<details><summary>Pourquoi payer si les images IGN sont gratuites ?</summary><p>Vous pouvez consulter gratuitement les images sur le site IGN et utiliser notre démo. Le service payant prévu prépare un document pour la parcelle que vous avez confirmée : fiche cadastrale, vues sur un même cadrage, recherches environnementales disponibles et références datées. Vous payez ce travail de rassemblement et les exports HTML/PDF, pas un accès exclusif aux données publiques.</p></details>
+<details><summary>Le dossier garantit-il que mon terrain est sans risque ?</summary><p>Non. Le dossier indique ce que les sources consultées permettent de documenter, ainsi que leurs limites et leurs éventuelles indisponibilités. Il ne remplace ni un état des risques réglementaire, ni une étude de sol, ni une expertise environnementale ou juridique.</p></details>
 <details><summary>Est-ce un diagnostic de pollution ou une vérification d'urbanisme ?</summary><p>Non. SiteHistory réunit des informations publiques et facilite un premier examen historique. Une pollution ou la conformité d'une construction ne peuvent pas être conclues à partir de ces seules données.</p></details>
 <details><summary>Les images historiques existent-elles pour toutes les parcelles ?</summary><p>Les dates et couches disponibles varient selon la localisation. Certaines images anciennes correspondent à une période d'acquisition et non à une date précise. Leur géoréférencement et leur résolution peuvent différer des images récentes.</p></details>
 <details><summary>À qui s'adresse cet outil ?</summary><p>Aux curieux, acheteurs, propriétaires et professionnels qui souhaitent gagner du temps pour rassembler des éléments documentaires. Il ne remplace pas les professionnels compétents pour les décisions à risque.</p></details>
@@ -195,8 +206,5 @@ footer{background:#102f29;color:#abc5b2;padding:33px 0;font-size:12px;line-heigh
 <section class="bottom"><div class="wrap bottomgrid"><div><h2>Un terrain peut raconter beaucoup.</h2><p>Commencez par comprendre ce que les données publiques en montrent.</p></div><a class="button bright" href="./demo.html">Lancer la démo réelle ↗</a></div></section>
 </main>
 <footer><div class="wrap foot"><div><strong>◈ SiteHistory France</strong><br>Outil indépendant utilisant des jeux de données publics. Sans affiliation avec l'IGN, le cadastre ou Géorisques. Les visuels de cette page sont des illustrations fictives.</div><div class="footnav"><a href="#fonctionnalites">Le produit</a><a href="./demo.html">Démo réelle</a><a href="#tarif">Offre pilote</a><a href="https://www.georisques.gouv.fr/" target="_blank" rel="noopener noreferrer">Géorisques ↗</a></div></div></footer>
-<script>
-(()=>{const slider=document.getElementById("slider"),frame=document.getElementById("compare"),value=document.getElementById("percent");if(!slider||!frame||!value)return;const update=()=>{const n=Number(slider.value);frame.style.setProperty("--split",n+"%");value.textContent=n+" / "+(100-n)};slider.addEventListener("input",update);update()})();
-</script>
 </body>
 </html>
