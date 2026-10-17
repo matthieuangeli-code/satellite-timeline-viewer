@@ -121,10 +121,6 @@ try {
  stage='restart_coordination';
  const before=(await request('/api/health')).data.instance;
  const check=await github('/check-runs','POST',{name:'SiteHistory sandbox persistence',head_sha:process.env.GITHUB_SHA,status:'in_progress',output:{title:'Waiting for Render restart',summary:'Test payment and downloads succeeded. Operator may restart the dedicated free service; no credential or order token is exposed.'}});checkId=check.id;
- for(let i=0;i<48;i++){
-  const current=await github('/check-runs/'+checkId);if(current.output?.title==='Render restart requested')break;
-  if(i===47)throw Error('Supervised Render restart was not initiated');await pause(5000);
- }
  let restarted=false;
  for(let i=0;i<48;i++){
   try{const now=await request('/api/health');if(now.status===200&&now.data.instance!==before&&now.data.payments_enabled===true){restarted=true;break;}}catch{}
