@@ -34,7 +34,7 @@ async function input(selectors,value,required=true){
  return false;
 }
 async function card(number){
- await input('input[name="email"],input[type="email"]',testEmail,false);
+ await input('input[name="email"],input[type="email"]',testEmail);
  const hasCard=async()=>{for(const frame of page.frames())if(await frame.locator('input[name="cardNumber"],input[autocomplete="cc-number"]').first().isVisible().catch(()=>false))return true;return false;};
  if(!await hasCard()){
   const next=page.getByRole('button',{name:/^Continue$|^Continuer$|^Fortsett$/i}).first();
