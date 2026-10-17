@@ -113,7 +113,7 @@ try {
  assert.equal(await page.locator('#delivery a').count(),0);note('success_redirect_is_not_payment_proof');
  stage='declined_test_card';await page.goto(order.url,{waitUntil:'domcontentloaded'});
  await card('4000000000000002');await submit();
- await page.getByText(/your card was declined|carte a été refusée|carte est refusée/i).first().waitFor({timeout:60000});
+ await page.getByText(/your (?:credit )?card was declined|carte a été refusée|carte est refusée/i).first().waitFor({timeout:60000});
  state=await request('/api/orders/'+order.order_id,{token:order.order_token});assert.equal(state.data.status,'pending');assert.deepEqual(state.data.downloads,{});note('declined_payment_has_no_downloads');
  await page.screenshot({path:out+'/declined-test-card.png'});
  stage='successful_test_card';await card('4242424242424242');await submit();
