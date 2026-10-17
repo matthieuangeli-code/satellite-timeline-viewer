@@ -50,4 +50,8 @@ try {
  console.log(JSON.stringify(result));
 } catch(error) {
  result.error=error.message;console.error('Hosted verification failed:',error.message);process.exitCode=1;
-} finally {await writeFile(output+'/result.json',JSON.stringify(result,null,2));}
+} finally {
+ await writeFile(output+'/result.json',JSON.stringify(result,null,2));
+ const summary=JSON.stringify(result).replaceAll('%','%25').replaceAll('\r','%0D').replaceAll('\n','%0A');
+ console.log('::notice title=SiteHistory hosted verification::'+summary);
+}
