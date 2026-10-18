@@ -6,7 +6,8 @@ const base=process.env.SITEHISTORY_BASE_URL||'https://matthieuangeli-code.github
 const output=process.env.SITEHISTORY_SCREENSHOTS||'test-results/sitehistory';
 await mkdir(output,{recursive:true});
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
-const addresses=['37 rue Grande, 27510 Tilly','1 place de la Comédie, 69001 Lyon','1 place du Bouffay, 44000 Nantes'];
+const parcelOverride=process.env.SITEHISTORY_PARCEL_ID;
+const addresses=parcelOverride?[parcelOverride]:['37 rue Grande, 27510 Tilly','1 place de la Comédie, 69001 Lyon','1 place du Bouffay, 44000 Nantes'];
 let failures=0;
 try {
  for(const mobile of [false,true]) {
@@ -45,9 +46,15 @@ try {
    await page.locator('#era').waitFor({state:'visible'});
    await page.waitForFunction(()=>document.querySelector('#comparison-state').dataset.oldHash||document.querySelector('#status').classList.contains('failed'),null,{timeout:150000});
    if(!mobile&&index===0&&transientRequests<2)throw Error('Transient IGN tile failure did not retry the same resource');
-   await page.locator('#address').fill(address);await page.locator('#search').click();
-   await page.waitForFunction(()=>document.querySelector('#comparison-state').dataset.oldHash&&document.querySelector('#candidates').options.length>1,null,{timeout:150000});
-   const candidate= index===0 ? '276440000B0150' : await page.locator('#candidates option').nth(1).getAttribute('value');
+   if(parcelOverride){
+    if(mobile){await page.locator('#address').fill(parcelOverride);await page.locator('#search').click()}
+    else{await page.locator('#identifier').fill(parcelOverride);await page.locator('#identifier-form button').click()}
+    await page.waitForFunction(id=>document.querySelector('#comparison-state').dataset.oldHash&&document.querySelector('#candidates').value===id,parcelOverride,{timeout:150000});
+   }else{
+    await page.locator('#address').fill(address);await page.locator('#search').click();
+    await page.waitForFunction(()=>document.querySelector('#comparison-state').dataset.oldHash&&document.querySelector('#candidates').options.length>1,null,{timeout:150000});
+   }
+   const candidate= parcelOverride||(index===0 ? '276440000B0150' : await page.locator('#candidates option').nth(1).getAttribute('value'));
    await page.locator('#candidates').selectOption(candidate);
    await page.locator('#confirm').click();
    const state=await page.locator('#comparison-state').evaluate(e=>({old:e.dataset.oldHash,recent:e.dataset.newHash}));
@@ -68,7 +75,7 @@ try {
     if(health.mode!=='sandbox')throw Error('Hosted mode must remain sandbox');
     const checkoutEnabled=!await page.locator('#checkout').isDisabled();
     if(checkoutEnabled!==health.payments_enabled)throw Error('Checkout availability differs from verified backend configuration');
-    console.log(JSON.stringify({name:'hosted-browser-report',parcel:'276440000B0150',prepared:true,checkoutEnabled}));
+    console.log(JSON.stringify({name:'hosted-browser-report',parcel:candidate,prepared:true,checkoutEnabled}));
    }
    await page.screenshot({path:`${output}/${name}.png`,fullPage:true});
    // Force historical requests to fail in a fresh page: no recent substitute allowed.

@@ -6,6 +6,7 @@ on:
       - ".github/workflows/demo-smoke.yml"
       - "scripts/smoke-sitehistory.mjs"
       - "scripts/delivery-ui.mjs"
+      - "scripts/preparation-ui.mjs"
       - "docs/demo.html"
       - "docs/index.html"
       - "docs/sources.html"
@@ -15,6 +16,7 @@ on:
       - ".github/workflows/demo-smoke.yml"
       - "scripts/smoke-sitehistory.mjs"
       - "scripts/delivery-ui.mjs"
+      - "scripts/preparation-ui.mjs"
       - "docs/demo.html"
       - "docs/index.html"
       - "docs/sources.html"
@@ -36,7 +38,7 @@ jobs:
           node-version: "22"
       - name: Install Playwright Chromium
         run: |
-          npm install --no-save --package-lock=false playwright@1.56.1 pngjs@7.0.0
+          npm install --no-save --package-lock=false playwright@1.56.1 pngjs@7.0.0 leaflet@1.9.4
           npx playwright install --with-deps chromium
       - name: Serve this checkout
         run: |
@@ -47,6 +49,8 @@ jobs:
           done
       - name: Check delivery recovery with explicit synthetic API fixtures
         run: node scripts/delivery-ui.mjs
+      - name: Check preparation feedback and early cadastral search with synthetic fixtures
+        run: node scripts/preparation-ui.mjs
       - name: Check SiteHistory against real public APIs in Chromium
         env:
           SITEHISTORY_BASE_URL: http://127.0.0.1:8000
@@ -56,4 +60,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sitehistory-browser-checks
-          path: test-results/sitehistory
+          path: test-results/

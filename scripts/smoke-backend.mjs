@@ -4,6 +4,8 @@ import { mkdir, writeFile } from 'node:fs/promises';
 const base='https://sitehistory-api-pilot.onrender.com';
 const origin='https://matthieuangeli-code.github.io';
 const output='test-results/backend';
+const parcelId=process.env.SITEHISTORY_PARCEL_ID||'276440000B0150';
+assert.match(parcelId,/^(?:[0-9]{5}|2[AB][0-9]{3})[0-9]{3}[A-Z0-9]{2}[0-9]{4}$/);
 await mkdir(output,{recursive:true});
 async function request(path,body,timeout=30000) {
  const response=await fetch(base+path,{method:body?'POST':'GET',headers:{Origin:origin,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(timeout)});
@@ -26,9 +28,10 @@ try {
  assert.equal(ready.response.headers.get('access-control-allow-origin'),origin,'GitHub Pages CORS missing');
  const address=await request('/api/addresses?q='+encodeURIComponent('37 rue Grande, 27510 Tilly'));
  assert.equal(address.response.status,200);assert.ok(address.data.features?.length,'Live address search failed');
- const parcel=await request('/api/parcels?identifier=276440000B0150');
+ const parcel=await request('/api/parcels?identifier='+parcelId);
  assert.equal(parcel.response.status,200);assert.equal(parcel.data.confirmation_required,true);
  assert.equal(parcel.data.features.length,1);assert.ok(parcel.data.features[0].geometry?.coordinates);
+ assert.equal(parcel.data.features[0].properties.idu,parcelId,'Exact requested cadastral parcel missing');
  assert.equal((await request('/api/parcels?identifier=invalid')).response.status,422);
  assert.equal((await request('/api/orders/unauthorized-order')).response.status,404);
  assert.equal((await request('/api/orders/unauthorized-order/download/pdf?expires=0&signature=invalid')).response.status,403);
@@ -43,16 +46,16 @@ try {
   result.delivery={state:health.payments_enabled?'not_verified':'not_configured'};
  } else {
  // A real generation attempt; an upstream outage is recorded as blocked, never as a generated report.
- const preview=await request('/api/previews',{parcel_id:'276440000B0150',confirmed:true,address:'37 rue Grande, 27510 Tilly',historical_resource:'ORTHOIMAGERY.ORTHOPHOTOS.1950-1965'},300000);
+ const preview=await request('/api/previews',{parcel_id:parcelId,confirmed:true,address:parcelId==='276440000B0150'?'37 rue Grande, 27510 Tilly':'',historical_resource:'ORTHOIMAGERY.ORTHOPHOTOS.1950-1965'},300000);
  if(preview.response.status===200) {
   assert.ok(preview.data.preview_token);assert.equal(preview.data.payments_enabled,health.payments_enabled);
   result.report={state:'prepared',summary:preview.data.summary};
   // Token stays in memory. Neither it nor the private report is exported to CI artifacts.
   if(!health.payments_enabled)assert.equal((await request('/api/checkout',{preview_token:preview.data.preview_token})).response.status,503);
  } else {
+  result.report={state:'blocked',parcel:parcelId,httpStatus:preview.response.status,reason:preview.data?.detail,retryAfter:preview.response.headers.get('retry-after')};
   assert.equal(preview.response.status,503,'Unexpected generation failure');
   assert.equal(typeof preview.data?.detail,'string');
-  result.report={state:'blocked',httpStatus:503,reason:preview.data.detail};
  }
  }
  console.log(JSON.stringify(result));
