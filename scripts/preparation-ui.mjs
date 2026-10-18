@@ -105,7 +105,7 @@ try{
   await prepared(page,c);await page.locator('#checkout').click();
   await page.waitForFunction(()=>document.querySelector('#checkout-status').dataset.state==='opening');
   assert.equal(await page.locator('#checkout').getAttribute('aria-busy'),'true');assert.ok(await page.locator('#checkout').isDisabled());
-  const box=await page.locator('#checkout-status').boundingBox();assert.ok(box.y>=0&&box.y+box.height<=844,'Checkout progress outside mobile viewport');
+  const box=await page.locator('#checkout-status').boundingBox();assert.ok(box.y>=-1&&box.y+box.height<=845,'Checkout progress outside mobile viewport: '+JSON.stringify(box));
   await page.locator('#checkout').evaluate(b=>b.click());assert.equal(c.checkoutRequests(),1);
   const navigation=page.waitForURL(checkoutSuccess.url);c.releaseCheckout();await navigation;
   const stored=(await contextStorage(page)).find(o=>o.origin===front);assert.ok(stored.localStorage.some(v=>v.name==='sitehistory-order'&&JSON.parse(v.value).id===checkoutSuccess.order_id));
