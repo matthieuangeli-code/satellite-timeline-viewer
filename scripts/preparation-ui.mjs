@@ -6,14 +6,17 @@ import {PNG} from 'pngjs';
 const front='https://sitehistory.test',api='https://api.sitehistory.test';
 const requested='276440000B0151';
 const success={preview_token:'fixture-preview-token-not-a-real-token-0000',summary:'Dossier HTML/PDF prêt — données SYNTHÉTIQUES.',payments_enabled:true};
+const checkoutSuccess={order_id:'synthetic-order-0000000000',order_token:'synthetic-owner-token-not-a-real-secret-0000',url:'https://checkout.stripe.com/c/pay/cs_test_synthetic_fixture'};
 const pngs=[true,false].map(old=>{const p=new PNG({width:256,height:256});for(let y=0;y<256;y++)for(let x=0;x<256;x++){const n=(x*3+y*7)%180+30,i=(y*256+x)*4;p.data.set(old?[n,n,n,255]:[30,n,200-n/2,255],i)}return PNG.sync.write(p)});
 const matrices=Array.from({length:5},(_,i)=>{const z=14+i;return `<TileMatrix><o:Identifier>${z}</o:Identifier><ScaleDenominator>${559082264.0287178/2**z}</ScaleDenominator><TopLeftCorner>-20037508.342789244 20037508.342789244</TopLeftCorner><TileWidth>256</TileWidth><TileHeight>256</TileHeight><MatrixWidth>${2**z}</MatrixWidth><MatrixHeight>${2**z}</MatrixHeight></TileMatrix>`}).join('');
 const caps=`<Capabilities xmlns="http://www.opengis.net/wmts/1.0" xmlns:o="http://www.opengis.net/ows/1.1"><Contents>${['ORTHOIMAGERY.ORTHOPHOTOS','ORTHOIMAGERY.ORTHOPHOTOS.1950-1965'].map(id=>`<Layer><o:Identifier>${id}</o:Identifier><Style isDefault="true"><o:Identifier>fixture</o:Identifier></Style><Format>image/png</Format><TileMatrixSetLink><TileMatrixSet>PM</TileMatrixSet></TileMatrixSetLink></Layer>`).join('')}<TileMatrixSet><o:Identifier>PM</o:Identifier><o:SupportedCRS>EPSG:3857</o:SupportedCRS>${matrices}</TileMatrixSet></Contents></Capabilities>`;
 const parcel=id=>({type:'Feature',properties:{idu:id,nom_com:'Commune SYNTHÉTIQUE',code_insee:'27644',section:'0B',numero:id.slice(-4)},geometry:{type:'Polygon',coordinates:[[[1.5298,49.1498],[1.5302,49.1498],[1.5302,49.1502],[1.5298,49.1502],[1.5298,49.1498]]]}});
 const browser=await chromium.launch({headless:true,args:['--no-sandbox'],...(process.env.CHROMIUM_EXECUTABLE?{executablePath:process.env.CHROMIUM_EXECUTABLE}:{})});
 await mkdir('test-results/preparation-ui',{recursive:true});let passed=0;
-async function scenario(name,reply,run,{slowCatalogue=false}={}){
- const context=await browser.newContext({viewport:{width:390,height:844}});let requests=0,releaseCatalogue;
+async function scenario(name,reply,run,{slowCatalogue=false,checkoutReply={status:200,json:checkoutSuccess},blockStorage=false}={}){
+ const context=await browser.newContext({viewport:{width:390,height:844}});let requests=0,checkoutRequests=0,releaseCatalogue,releaseCheckout;
+ if(blockStorage)await context.addInitScript(()=>{Storage.prototype.setItem=()=>{throw Error('Synthetic blocked storage')}});
+ const checkoutGate=new Promise(resolve=>releaseCheckout=resolve);
  const catalogueGate=new Promise(resolve=>releaseCatalogue=resolve);let releaseReport;
  const reportGate=new Promise(resolve=>releaseReport=resolve);
  try{
@@ -36,12 +39,21 @@ async function scenario(name,reply,run,{slowCatalogue=false}={}){
     if(reply==='network')return route.abort('failed');
     return route.fulfill({headers:cors,...reply});
    }
+   if(u.origin===api&&u.pathname==='/api/checkout'){
+    checkoutRequests++;assert.equal(route.request().postDataJSON().preview_token,success.preview_token);await checkoutGate;
+    if(checkoutReply==='network')return route.abort('failed');
+    return route.fulfill({headers:cors,...checkoutReply});
+   }
+   if(u.origin==='https://checkout.stripe.com')return route.fulfill({contentType:'text/html',body:'<h1>Stripe navigation fixture — no actual payment</h1>'});
    throw Error('Unexpected synthetic request: '+u.origin+u.pathname);
   });
   const page=await context.newPage();await page.goto(front+'/demo.html',{waitUntil:'domcontentloaded'});
-  await run(page,{releaseCatalogue,releaseReport,requests:()=>requests});
+  await run(page,{releaseCatalogue,releaseReport,releaseCheckout,requests:()=>requests,checkoutRequests:()=>checkoutRequests});
   await page.screenshot({path:`test-results/preparation-ui/${name}.png`,fullPage:true});passed++;console.log('SYNTHETIC preparation passed: '+name);
- }finally{releaseCatalogue();releaseReport();await context.close()}
+ }catch(error){
+  console.log('::error title=Synthetic preparation/Checkout regression::'+(name+': '+error.message).replaceAll('%','%25').replaceAll('\r','%0D').replaceAll('\n','%0A'));
+  const page=context.pages()[0];if(page)await page.screenshot({path:`test-results/preparation-ui/${name}-failure.png`}).catch(()=>{});throw error;
+ }finally{releaseCatalogue();releaseReport();releaseCheckout();await context.close()}
 }
 async function identify(page){
  await page.locator('#identifier').fill(requested);await page.locator('#identifier-form button').click();
@@ -87,5 +99,48 @@ try{
   c.releaseReport();await page.waitForFunction(()=>document.querySelector('#report-status').dataset.state==='ready');
   assert.equal(c.requests(),1);
  });
+ async function prepared(page,c){await start(page);c.releaseReport();await page.waitForFunction(()=>document.querySelector('#report-status').dataset.state==='ready')}
+ await scenario('checkout-visible-wait-and-navigation',{status:200,json:success},async(page,c)=>{
+  await page.evaluate(()=>window.addEventListener('beforeunload',()=>{const a=document.querySelector('#checkout-link');localStorage.setItem('synthetic-link-proof',JSON.stringify({hidden:a.hidden,href:a.href}))}));
+  await prepared(page,c);await page.locator('#checkout').click();
+  await page.waitForFunction(()=>document.querySelector('#checkout-status').dataset.state==='opening');
+  assert.equal(await page.locator('#checkout').getAttribute('aria-busy'),'true');assert.ok(await page.locator('#checkout').isDisabled());
+  const box=await page.locator('#checkout-status').boundingBox();assert.ok(box.y>=-1&&box.y+box.height<=845,'Checkout progress outside mobile viewport: '+JSON.stringify(box));
+  await page.locator('#checkout').evaluate(b=>b.click());assert.equal(c.checkoutRequests(),1);
+  const navigation=page.waitForURL(checkoutSuccess.url);c.releaseCheckout();await navigation;
+  const stored=(await contextStorage(page)).find(o=>o.origin===front);assert.ok(stored.localStorage.some(v=>v.name==='sitehistory-order'&&JSON.parse(v.value).id===checkoutSuccess.order_id));
+  assert.deepEqual(JSON.parse(stored.localStorage.find(v=>v.name==='synthetic-link-proof').value),{hidden:false,href:checkoutSuccess.url},'A manual link must be present before automatic navigation');
+ });
+ for(const [name,checkoutReply,expected] of [
+  ['checkout-stripe-503',{status:503,json:{detail:'Stripe test indisponible. Réessayez cette même commande.'}},'Stripe test indisponible'],
+  ['checkout-quota-429',{status:429,json:{detail:'Limite temporaire atteinte. Réessayez dans environ 5 minute(s).'}},'Limite temporaire'],
+  ['checkout-gateway-html',{status:502,contentType:'text/html',body:'<h1>Gateway unavailable</h1>'},'HTTP 502'],
+  ['checkout-expired-410',{status:410,json:{detail:'Aperçu expiré ; préparez de nouveau le dossier avant paiement.'}},'Aperçu expiré'],
+  ['checkout-incomplete',{status:200,json:{}},'Réponse de paiement TEST incomplète'],
+  ['checkout-foreign-url',{status:200,json:{...checkoutSuccess,url:'https://other.example/cs_test_fixture'}},'Réponse de paiement TEST incomplète'],
+  ['checkout-live-url',{status:200,json:{...checkoutSuccess,url:'https://checkout.stripe.com/c/pay/cs_live_fixture'}},'Réponse de paiement TEST incomplète'],
+  ['checkout-network','network','Impossible de joindre'],
+  ['checkout-blocked-storage',{status:200,json:checkoutSuccess},'Le navigateur bloque la conservation']
+ ])await scenario(name,{status:200,json:success},async(page,c)=>{
+  await prepared(page,c);await page.locator('#checkout').click();c.releaseCheckout();
+  await page.waitForFunction(()=>document.querySelector('#checkout-status').dataset.state==='failed');
+  assert.ok((await page.locator('#checkout-status').innerText()).includes(expected));assert.equal(page.url(),front+'/demo.html');
+  // Chromium rounds scrolling to device pixels; DOM boxes retain fractional pixels.
+  const box=await page.locator('#checkout-status').boundingBox();assert.ok(box.y>=-1&&box.y+box.height<=845,'Checkout error outside mobile viewport: '+JSON.stringify(box));
+  assert.ok(await page.locator('#checkout-link').isHidden());assert.equal(await page.locator('#checkout').getAttribute('aria-busy'),null);
+  if(name==='checkout-expired-410'){assert.ok(await page.locator('#checkout').isDisabled());assert.ok(!await page.locator('#prepare').isDisabled())}
+  else{assert.ok(!await page.locator('#checkout').isDisabled());assert.ok(await page.locator('#prepare').isDisabled())}
+  if(name==='checkout-stripe-503'){
+   await page.locator('#checkout').click();await page.waitForFunction(()=>document.querySelector('#checkout-status').dataset.state==='failed');
+   assert.equal(c.requests(),1,'Checkout retry must not generate a second report');assert.equal(c.checkoutRequests(),2);
+  }
+ },{checkoutReply,blockStorage:name==='checkout-blocked-storage'});
+ await scenario('checkout-selection-changed',{status:200,json:success},async(page,c)=>{
+  await prepared(page,c);await page.locator('#checkout').click();
+  await page.locator('#candidates').selectOption('');c.releaseCheckout();
+  await page.waitForFunction(()=>document.querySelector('#checkout-status').dataset.state==='failed');
+  assert.ok((await page.locator('#checkout-status').innerText()).includes('La sélection a changé'));assert.ok(await page.locator('#checkout-link').isHidden());assert.equal(page.url(),front+'/demo.html');
+ });
  console.log(`${passed} synthetic preparation regressions passed; real parcel preparation remains a separate test.`);
 }finally{await browser.close()}
+async function contextStorage(page){return (await page.context().storageState()).origins}

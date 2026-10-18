@@ -1,6 +1,14 @@
 name: Supervised Stripe sandbox delivery
 on:
   workflow_dispatch:
+    inputs:
+      navigation_only:
+        description: Open real Stripe TEST Checkout without entering a card or paying
+        type: boolean
+        default: false
+      parcel_id:
+        description: Cadastral reference for the navigation-only check
+        default: '276440000B0151'
 permissions:
   contents: read
   checks: write
@@ -25,10 +33,19 @@ jobs:
       - name: Real TEST payment, secure downloads and supervised restart
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: node scripts/stripe-sandbox-e2e.mjs
+          CHECKOUT_ONLY: ${{ inputs.navigation_only }}
+          SITEHISTORY_PARCEL_ID: ${{ inputs.parcel_id }}
+        run: |
+          if [ "$CHECKOUT_ONLY" = "true" ]; then
+            node scripts/checkout-smoke.mjs
+          else
+            node scripts/stripe-sandbox-e2e.mjs
+          fi
       - name: Preserve audit results without keys, tokens or private reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: stripe-sandbox-results
-          path: test-results/stripe-sandbox/
+          path: |
+            test-results/stripe-sandbox/
+            test-results/checkout/
