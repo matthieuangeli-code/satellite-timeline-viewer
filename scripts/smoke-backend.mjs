@@ -21,6 +21,7 @@ try {
  assert.equal(health.mode,'sandbox');assert.equal(health.storage,'postgresql');
  assert.equal(typeof health.payments_enabled,'boolean');
  result.paymentsEnabled=health.payments_enabled;
+ result.delivery={state:health.payments_enabled?'not_verified':'not_configured'};
  const ready=await request('/api/ready');assert.equal(ready.response.status,200);assert.equal(ready.data.storage,'postgresql');
  assert.equal(ready.response.headers.get('access-control-allow-origin'),origin,'GitHub Pages CORS missing');
  const address=await request('/api/addresses?q='+encodeURIComponent('37 rue Grande, 27510 Tilly'));

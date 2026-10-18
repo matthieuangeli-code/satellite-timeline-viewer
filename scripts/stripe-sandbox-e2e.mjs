@@ -140,6 +140,18 @@ try {
  await page.waitForFunction(()=>document.querySelector('#candidates').options.length>1,null,{timeout:120000});
  assert.equal(await page.locator('#delivery a').count(),2);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  await page.locator('#order-panel').screenshot({path:out+'/mobile-delivery.png'});note('mobile_delivery_survives_reload');
+ stage='delivery_recovery_in_new_tab';
+ const originalPage=page;page=await context.newPage();await page.setViewportSize({width:390,height:844});
+ await page.goto(front+'/demo.html?checkout=returned',{waitUntil:'domcontentloaded'});
+ await page.locator('#delivery a').first().waitFor({state:'visible',timeout:30000});
+ assert.equal(await page.evaluate(()=>sessionStorage.getItem('sitehistory-order')),null,'Recovery must not depend on the payment tab session');
+ assert.equal(await page.locator('#delivery a').count(),2);
+ const box=await page.locator('#delivery').boundingBox();assert.ok(box.y>=0&&box.y+box.height<=844,'Downloads are outside the mobile viewport');
+ // An old href must be renewed using the owner token before browser download.
+ await page.getByRole('link',{name:'Télécharger PDF',exact:true}).evaluate(a=>{const u=new URL(a.href);u.searchParams.set('expires','0');a.href=u.toString()});
+ const recovered=await browserDownloads();assert.equal(hash(recovered.html),hash(files.html));assert.equal(hash(recovered.pdf),hash(files.pdf));
+ await page.locator('#order-panel').screenshot({path:out+'/new-tab-delivery.png'});await originalPage.close();
+ note('new_tab_recovers_same_paid_report');note('stale_download_link_renewed_without_new_payment');
  stage='restart_coordination';
  const before=(await request('/api/health')).data.instance;
  const check=await github('/check-runs','POST',{name:'SiteHistory sandbox persistence',head_sha:process.env.GITHUB_SHA,status:'in_progress',output:{title:'Waiting for Render restart',summary:'Test payment and downloads succeeded. Operator may restart the dedicated free service; no credential or order token is exposed.'}});checkId=check.id;
