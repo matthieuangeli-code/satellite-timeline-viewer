@@ -78,8 +78,15 @@ function imagery(){
  maps.forEach(m=>{m.setMinZoom(Math.min(...zs));m.setMaxZoom(Math.max(...zs))});
  for(const [i,l] of [old,recent].entries()){
   $(i?'new-source':'old-source').textContent=l.period+' · '+l.id+' · style '+l.style+' · '+l.format+' · '+l.set+' · zooms '+Object.keys(l.matrices).join(', ')+' · couverture '+JSON.stringify(l.bbox);
-  const Layer=L.TileLayer.extend({getTileUrl(c){return tileURL(l,c)}});
+  const Layer=L.TileLayer.extend({getTileUrl(c){return tileURL(l,c)},
+   _tileOnError(done,tile,error){
+    // One retry of the exact tile, never another resource or period.
+    if(!tile.sitehistoryRetried&&tile.getAttribute('src')){tile.sitehistoryRetried=true;const url=tile.src;tile.sitehistoryRetry=setTimeout(()=>{if(tile.isConnected)tile.src=url},750);return}
+    L.TileLayer.prototype._tileOnError.call(this,done,tile,error);
+   }
+  });
   raster[i]=new Layer('',{minZoom:Math.min(...zs),maxZoom:Math.max(...zs),crossOrigin:'anonymous',attribution:'© IGN / Géoplateforme',updateWhenIdle:true,keepBuffer:0}).addTo(maps[i]);
+  raster[i].on('tileunload',e=>clearTimeout(e.tile.sitehistoryRetry));
   raster[i].on('loading',()=>{rendering++;unavailable(i,'Vérification de l’image IGN…')});raster[i].on('load',schedule);raster[i].on('tileerror',()=>{unavailable(i);$('comparison-state').textContent='Image manquante : comparaison non validée. Aucune image récente n’est substituée.'});
  }
  updateOfficial();schedule();
@@ -112,10 +119,44 @@ $('search-form').onsubmit=search;$('candidates').onchange=()=>choose($('candidat
 $('identifier-form').onsubmit=async e=>{e.preventDefault();const t=++selectionGeneration;generation++;const id=$('identifier').value.replace(/[\s-]/g,'').toUpperCase();setCandidates([]);if(!/^(?:[0-9]{5}|2[AB][0-9]{3})[0-9]{3}[A-Z0-9]{2}[0-9]{4}$/.test(id)){status('Identifiant cadastral invalide (14 caractères requis).',true);return}status('Recherche de la référence cadastrale…');try{const fs=(await json(CARTO+'?'+new URLSearchParams({code_insee:id.slice(0,5),section:id.slice(8,10),numero:id.slice(10)}))).features||[];if(t!==selectionGeneration)return;setCandidates(fs.filter(f=>idOf(f)===id));if(selected){$('fit').click();periods()}status(selected?'Référence exacte retrouvée. Vérifiez et confirmez le contour.':'Aucune parcelle avec cette référence exacte.',!selected)}catch(e){if(t===selectionGeneration)status(e.message,true)}};
 $('fit').onclick=()=>{if(selected){const b=L.geoJSON(selected).getBounds().pad(1);maps.forEach(m=>m.fitBounds(b,{maxZoom:18}))}};
 $('confirm').onclick=()=>{if(!selected)return;confirmed=true;$('confirm').disabled=true;$('parcel').textContent=$('parcel').textContent.replace('Sélection candidate — à confirmer','Parcelle confirmée par vous');$('prepare').disabled=!(api&&validPair);$('report-status').textContent=api?'Parcelle confirmée. Vérifiez les données avant tout paiement test.':'Parcelle confirmée. Serveur de rapports non connecté : export et paiement indisponibles.'};
-$('prepare').onclick=async()=>{const parcel=idOf(selected||{}),old=$('era').value;if(!confirmed||!validPair)return;prepared=null;$('checkout').disabled=true;$('prepare').disabled=true;status('Vérification des images et génération préalable HTML/PDF…');try{const p=await post('/api/previews',{parcel_id:parcel,confirmed:true,address:$('found-address').textContent||$('address').value,historical_resource:old});if(!confirmed||idOf(selected||{})!==parcel||$('era').value!==old)return;prepared=p;$('report-status').textContent=p.summary+' Paiement sandbox uniquement.';$('checkout').disabled=!p.payments_enabled;status('Dossier préparé. Les données essentielles ont été générées avant paiement.');}catch(e){$('report-status').textContent=e.message;status(e.message,true)}finally{$('prepare').disabled=!(api&&confirmed&&validPair)}};
-$('checkout').onclick=async()=>{if(!prepared)return;$('checkout').disabled=true;try{const d=await post('/api/checkout',{preview_token:prepared.preview_token});sessionStorage.setItem('sitehistory-order',JSON.stringify({id:d.order_id,token:d.order_token}));location.assign(d.url)}catch(e){status(e.message,true);$('checkout').disabled=false}};
-async function delivery(){const raw=sessionStorage.getItem('sitehistory-order');if(!raw||!api)return;let o;try{o=JSON.parse(raw)}catch{return}const r=await fetch(api+'/api/orders/'+o.id,{headers:{Authorization:'Bearer '+o.token}});if(!r.ok)return;const d=await r.json();$('order-panel').hidden=false;$('order-status').textContent=(d.parcel_id?'Parcelle '+d.parcel_id+' — ':'')+d.message;$('delivery').replaceChildren();for(const format of ['html','pdf'])if(d.downloads?.[format]){const a=node('a','Télécharger '+format.toUpperCase());a.href=api+d.downloads[format];a.rel='noreferrer';$('delivery').append(a)}if(d.retryable){const b=node('button','Reprendre la livraison');b.onclick=async()=>{await post('/api/orders/'+o.id+'/retry',{order_token:o.token});await delivery()};$('delivery').append(b)}if(d.status==='pending'||d.status==='paid')setTimeout(()=>delivery().catch(()=>{}),4000)}
-delivery().catch(()=>{$('order-panel').hidden=false;$('order-status').textContent='Livraison momentanément inaccessible. Rechargez cette page pour reprendre sans repayer.'});
+$('prepare').onclick=async()=>{const parcel=idOf(selected||{}),old=$('era').value;if(!confirmed||!validPair)return;prepared=null;$('checkout').disabled=true;$('prepare').disabled=true;status('Vérification des images et génération préalable HTML/PDF…');try{const p=await post('/api/previews',{parcel_id:parcel,confirmed:true,address:$('found-address').textContent||$('address').value,historical_resource:old});if(!confirmed||idOf(selected||{})!==parcel||$('era').value!==old)return;prepared=p;$('report-status').textContent=p.summary+' Pour télécharger le HTML et le PDF, continuez avec le paiement TEST ci-dessous. Aucun débit réel.';$('checkout').disabled=!p.payments_enabled;status('Dossier préparé. Continuez avec le paiement TEST pour obtenir les téléchargements.');}catch(e){$('report-status').textContent=e.message;status(e.message,true)}finally{$('prepare').disabled=!(api&&confirmed&&validPair)}};
+const orderKey='sitehistory-order';let deliveryTimer,deliveryShown=false;
+function rememberOrder(order){
+ const raw=JSON.stringify({id:order.id,token:order.token,savedAt:Date.now()});let saved=false;
+ for(const name of ['sessionStorage','localStorage'])try{window[name].setItem(orderKey,raw);saved=true}catch{}
+ if(!saved)throw Error('Le navigateur bloque la conservation de votre commande. Autorisez le stockage du site avant le paiement ; aucun paiement n’a été ouvert.');
+}
+function rememberedOrder(){
+ for(const name of ['sessionStorage','localStorage'])try{
+  const raw=window[name].getItem(orderKey);if(!raw)continue;const o=JSON.parse(raw);
+  if(o.savedAt&&Date.now()-o.savedAt>86400000){window[name].removeItem(orderKey);continue}
+  if(typeof o.id==='string'&&typeof o.token==='string')return o;
+ }catch{}
+ return null;
+}
+$('checkout').onclick=async()=>{if(!prepared)return;$('checkout').disabled=true;try{const d=await post('/api/checkout',{preview_token:prepared.preview_token});rememberOrder({id:d.order_id,token:d.order_token});location.assign(d.url)}catch(e){status(e.message,true);$('checkout').disabled=false}};
+function deliveryError(message){$('order-panel').hidden=false;$('order-status').textContent=message;$('delivery').replaceChildren()}
+async function orderData(o){
+ const r=await fetch(api+'/api/orders/'+encodeURIComponent(o.id),{headers:{Authorization:'Bearer '+o.token},signal:AbortSignal.timeout(45000)});
+ const d=await r.json();if(!r.ok){const error=Error(typeof d.detail==='string'?d.detail:'Commande momentanément inaccessible. Réessayez sans repayer.');error.status=r.status;throw error}return d;
+}
+function deliveryFailed(error){deliveryError('Téléchargement indisponible : '+error.message+(error.status===410?' Les fichiers ne sont plus disponibles.':error.status===404?' Revenez dans le navigateur utilisé pour le paiement. Ne repassez pas commande.':' Cliquez sur « Actualiser les téléchargements » pour reprendre sans repayer.'))}
+async function delivery(){
+ clearTimeout(deliveryTimer);const o=rememberedOrder();if(!api)return;
+ if(!o){if(new URLSearchParams(location.search).has('checkout'))deliveryError('Cette page ne retrouve pas votre commande. Revenez dans le navigateur utilisé pour le paiement. Ne recommencez pas le paiement.');return}
+ const d=await orderData(o);$('order-panel').hidden=false;
+ $('order-status').textContent=(d.parcel_id?'Parcelle '+d.parcel_id+' — ':'')+d.message;$('delivery').replaceChildren();
+ for(const format of ['html','pdf'])if(d.downloads?.[format]){
+  const a=node('a','Télécharger '+format.toUpperCase());a.href=api+d.downloads[format];a.rel='noreferrer';
+  a.onclick=async e=>{e.preventDefault();try{const fresh=await orderData(o);if(!fresh.downloads?.[format])throw Error(fresh.message||'Paiement non encore vérifié.');location.assign(api+fresh.downloads[format])}catch(error){deliveryFailed(error)}};
+  $('delivery').append(a);
+ }
+ if(!deliveryShown&&new URLSearchParams(location.search).has('checkout')){$('order-panel').scrollIntoView({block:'start'});deliveryShown=true}
+ if(d.status==='pending'||d.status==='paid')deliveryTimer=setTimeout(()=>delivery().catch(deliveryFailed),4000);
+}
+$('refresh-delivery').onclick=()=>delivery().catch(deliveryFailed);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)delivery().catch(deliveryFailed)});
+delivery().catch(deliveryFailed);
 try{
  if(!window.L)throw Error('Bibliothèque cartographique indisponible');
  maps=[L.map('map-old',{zoomAnimation:false,fadeAnimation:false}),L.map('map-new',{zoomAnimation:false,fadeAnimation:false})];

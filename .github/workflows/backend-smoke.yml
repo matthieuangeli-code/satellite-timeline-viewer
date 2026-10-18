@@ -17,7 +17,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: sitehistory-live-data-checks
+  group: sitehistory-backend-checks
   cancel-in-progress: false
 jobs:
   hosted-sandbox:
@@ -33,10 +33,12 @@ jobs:
           SITEHISTORY_VERIFY_REPORT: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
         run: node scripts/smoke-backend.mjs
       - name: Install browser verification tools
+        if: github.event_name == 'workflow_dispatch'
         run: |
           npm install --no-save --package-lock=false playwright@1.56.1 pngjs@7.0.0
           npx playwright install --with-deps chromium
       - name: Verify hosted frontend in a real browser
+        if: github.event_name == 'workflow_dispatch'
         env:
           SITEHISTORY_BASE_URL: https://sitehistory-api-pilot.onrender.com
           SITEHISTORY_SCREENSHOTS: test-results/backend-browser

@@ -31,10 +31,20 @@ try {
   const context=await browser.newContext({viewport:{width:mobile?390:1360,height:mobile?844:1000}});
   const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
   try {
+   let transientURL=null,transientRequests=0;
+   if(!mobile&&index===0)await page.route('**/wmts?**',route=>{
+    const u=new URL(route.request().url());
+    if(route.request().resourceType()==='image'&&u.searchParams.get('REQUEST')==='GetTile'&&u.searchParams.get('LAYER')!=='ORTHOIMAGERY.ORTHOPHOTOS'){
+     if(!transientURL){transientURL=route.request().url();transientRequests++;return route.fulfill({status:503,body:'Intentional one-off tile outage',headers:{'Access-Control-Allow-Origin':'*'}})}
+     if(route.request().url()===transientURL)transientRequests++;
+    }
+    return route.continue();
+   });
    const response=await page.goto(base+'/demo.html',{waitUntil:'domcontentloaded',timeout:40000});
    if(response.status()!==200)throw Error('Demo HTTP '+response.status());
    await page.locator('#era').waitFor({state:'visible'});
    await page.waitForFunction(()=>document.querySelector('#comparison-state').dataset.oldHash||document.querySelector('#status').classList.contains('failed'),null,{timeout:150000});
+   if(!mobile&&index===0&&transientRequests<2)throw Error('Transient IGN tile failure did not retry the same resource');
    await page.locator('#address').fill(address);await page.locator('#search').click();
    await page.waitForFunction(()=>document.querySelector('#comparison-state').dataset.oldHash&&document.querySelector('#candidates').options.length>1,null,{timeout:150000});
    const candidate= index===0 ? '276440000B0150' : await page.locator('#candidates option').nth(1).getAttribute('value');
@@ -63,7 +73,7 @@ try {
    await page.screenshot({path:`${output}/${name}.png`,fullPage:true});
    // Force historical requests to fail in a fresh page: no recent substitute allowed.
    const missing=await context.newPage();
-   await missing.route('**/wmts?**',route=>{const u=new URL(route.request().url());if(u.searchParams.get('REQUEST')==='GetTile'&&u.searchParams.get('LAYER')!=='ORTHOIMAGERY.ORTHOPHOTOS')return route.fulfill({status:404,body:'Intentional test outage',headers:{'Access-Control-Allow-Origin':'*'}});return route.continue()});
+   await missing.route('**/wmts?**',route=>{const u=new URL(route.request().url());if(route.request().resourceType()==='image'&&u.searchParams.get('REQUEST')==='GetTile'&&u.searchParams.get('LAYER')!=='ORTHOIMAGERY.ORTHOPHOTOS')return route.fulfill({status:404,body:'Intentional persistent tile outage',headers:{'Access-Control-Allow-Origin':'*'}});return route.continue()});
    await missing.goto(base+'/demo.html',{waitUntil:'domcontentloaded'});
    await missing.waitForFunction(()=>/Aucune période historique vérifiée|Image manquante|Comparaison non validée/.test(document.querySelector('#comparison-state').textContent),null,{timeout:150000});
    if(await missing.locator('#comparison-state').getAttribute('data-old-hash'))throw Error('Missing image incorrectly validated');

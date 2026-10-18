@@ -5,6 +5,7 @@ on:
     paths:
       - ".github/workflows/demo-smoke.yml"
       - "scripts/smoke-sitehistory.mjs"
+      - "scripts/delivery-ui.mjs"
       - "docs/demo.html"
       - "docs/index.html"
       - "docs/sources.html"
@@ -13,6 +14,7 @@ on:
     paths:
       - ".github/workflows/demo-smoke.yml"
       - "scripts/smoke-sitehistory.mjs"
+      - "scripts/delivery-ui.mjs"
       - "docs/demo.html"
       - "docs/index.html"
       - "docs/sources.html"
@@ -21,7 +23,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: sitehistory-live-data-checks
+  group: sitehistory-demo-checks
   cancel-in-progress: false
 jobs:
   browser-smoke:
@@ -43,6 +45,8 @@ jobs:
             if curl -fsS http://127.0.0.1:8000/demo.html > /dev/null; then break; fi
             sleep 1
           done
+      - name: Check delivery recovery with explicit synthetic API fixtures
+        run: node scripts/delivery-ui.mjs
       - name: Check SiteHistory against real public APIs in Chromium
         env:
           SITEHISTORY_BASE_URL: http://127.0.0.1:8000
