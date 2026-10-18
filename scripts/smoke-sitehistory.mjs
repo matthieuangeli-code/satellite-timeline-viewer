@@ -47,7 +47,8 @@ try {
    await page.waitForFunction(()=>document.querySelector('#comparison-state').dataset.oldHash||document.querySelector('#status').classList.contains('failed'),null,{timeout:150000});
    if(!mobile&&index===0&&transientRequests<2)throw Error('Transient IGN tile failure did not retry the same resource');
    if(parcelOverride){
-    await page.locator('#identifier').fill(parcelOverride);await page.locator('#identifier-form button').click();
+    if(mobile){await page.locator('#address').fill(parcelOverride);await page.locator('#search').click()}
+    else{await page.locator('#identifier').fill(parcelOverride);await page.locator('#identifier-form button').click()}
     await page.waitForFunction(id=>document.querySelector('#comparison-state').dataset.oldHash&&document.querySelector('#candidates').value===id,parcelOverride,{timeout:150000});
    }else{
     await page.locator('#address').fill(address);await page.locator('#search').click();

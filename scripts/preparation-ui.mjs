@@ -79,5 +79,13 @@ try{
   // Catalogue completion must not replace the explicitly requested151 by default150.
   await page.waitForTimeout(500);assert.equal(await page.locator('#candidates').inputValue(),requested);
  },{slowCatalogue:true});
+ await scenario('cadastral-reference-in-address-input',{status:200,json:success},async(page,c)=>{
+  await page.waitForFunction(()=>document.querySelector('#candidates').options.length>1&&document.querySelector('#comparison-state').dataset.oldHash);
+  await page.locator('#address').fill(requested);await page.locator('#search').click();
+  await page.waitForFunction(id=>document.querySelector('#candidates').value===id&&document.querySelector('#comparison-state').dataset.oldHash,requested);
+  assert.equal(await page.locator('#identifier').inputValue(),requested);await page.locator('#confirm').click();await page.locator('#prepare').click();
+  c.releaseReport();await page.waitForFunction(()=>document.querySelector('#report-status').dataset.state==='ready');
+  assert.equal(c.requests(),1);
+ });
  console.log(`${passed} synthetic preparation regressions passed; real parcel preparation remains a separate test.`);
 }finally{await browser.close()}
