@@ -21,7 +21,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: sitehistory-live-data-checks
+  group: sitehistory-demo-checks
   cancel-in-progress: false
 jobs:
   browser-smoke:
