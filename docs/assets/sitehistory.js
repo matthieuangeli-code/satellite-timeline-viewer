@@ -78,8 +78,15 @@ function imagery(){
  maps.forEach(m=>{m.setMinZoom(Math.min(...zs));m.setMaxZoom(Math.max(...zs))});
  for(const [i,l] of [old,recent].entries()){
   $(i?'new-source':'old-source').textContent=l.period+' · '+l.id+' · style '+l.style+' · '+l.format+' · '+l.set+' · zooms '+Object.keys(l.matrices).join(', ')+' · couverture '+JSON.stringify(l.bbox);
-  const Layer=L.TileLayer.extend({getTileUrl(c){return tileURL(l,c)}});
+  const Layer=L.TileLayer.extend({getTileUrl(c){return tileURL(l,c)},
+   _tileOnError(done,tile,error){
+    // One retry of the exact tile, never another resource or period.
+    if(!tile.sitehistoryRetried&&tile.getAttribute('src')){tile.sitehistoryRetried=true;const url=tile.src;tile.sitehistoryRetry=setTimeout(()=>{if(tile.isConnected)tile.src=url},750);return}
+    L.TileLayer.prototype._tileOnError.call(this,done,tile,error);
+   }
+  });
   raster[i]=new Layer('',{minZoom:Math.min(...zs),maxZoom:Math.max(...zs),crossOrigin:'anonymous',attribution:'© IGN / Géoplateforme',updateWhenIdle:true,keepBuffer:0}).addTo(maps[i]);
+  raster[i].on('tileunload',e=>clearTimeout(e.tile.sitehistoryRetry));
   raster[i].on('loading',()=>{rendering++;unavailable(i,'Vérification de l’image IGN…')});raster[i].on('load',schedule);raster[i].on('tileerror',()=>{unavailable(i);$('comparison-state').textContent='Image manquante : comparaison non validée. Aucune image récente n’est substituée.'});
  }
  updateOfficial();schedule();
