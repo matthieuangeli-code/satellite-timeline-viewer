@@ -83,13 +83,12 @@ try {
   if(response.ok()){order=data;protect(order.order_token);protect(order.url);}else result.checkoutFailure=safe(data.detail);
   await route.fulfill({response});
  });
- page.on('response',async response=>{
-  try{
-   if(response.url()===api+'/api/previews'){
-    const data=await response.json();result.previewHttpStatus=response.status();
-    if(response.ok()){preview=data;protect(preview.preview_token);}else result.previewFailure=safe(data.detail);
-   }
-  }catch{}
+ await page.route(api+'/api/previews',async route=>{
+  // Capture the genuine POST response before allowing the UI to report ready.
+  // An asynchronous response listener can finish after the next assertion.
+  const response=await route.fetch({timeout:300000});const data=await response.json();result.previewHttpStatus=response.status();
+  if(response.ok()){preview=data;protect(preview.preview_token);}else result.previewFailure=safe(data.detail);
+  await route.fulfill({response});
  });
  await page.goto(front+'/demo.html',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>document.querySelector('#comparison-state').dataset.oldHash&&document.querySelector('#candidates').options.length>1,null,{timeout:180000});
