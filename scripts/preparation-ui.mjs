@@ -50,7 +50,9 @@ async function scenario(name,reply,run,{slowCatalogue=false,checkoutReply={statu
   const page=await context.newPage();await page.goto(front+'/demo.html',{waitUntil:'domcontentloaded'});
   await run(page,{releaseCatalogue,releaseReport,releaseCheckout,requests:()=>requests,checkoutRequests:()=>checkoutRequests});
   await page.screenshot({path:`test-results/preparation-ui/${name}.png`,fullPage:true});passed++;console.log('SYNTHETIC preparation passed: '+name);
- }catch(error){const page=context.pages()[0];if(page)await page.screenshot({path:`test-results/preparation-ui/${name}-failure.png`}).catch(()=>{});throw error;
+ }catch(error){
+  console.log('::error title=Synthetic preparation/Checkout regression::'+(name+': '+error.message).replaceAll('%','%25').replaceAll('\r','%0D').replaceAll('\n','%0A'));
+  const page=context.pages()[0];if(page)await page.screenshot({path:`test-results/preparation-ui/${name}-failure.png`}).catch(()=>{});throw error;
  }finally{releaseCatalogue();releaseReport();releaseCheckout();await context.close()}
 }
 async function identify(page){
