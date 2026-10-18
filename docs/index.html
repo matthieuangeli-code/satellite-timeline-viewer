@@ -1,210 +1,689 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SiteHistory France — Chaque parcelle a une histoire</title>
-<meta name="description" content="Explorez gratuitement votre parcelle et les vues IGN. Découvrez le dossier à 4,90 € : synthèse cadastrale, images cadrées et sources environnementales en HTML et PDF. Commandes pas encore ouvertes.">
-<meta name="theme-color" content="#173e35">
+<meta name="description" content="Explorez gratuitement votre parcelle et les vues IGN. Découvrez le dossier à 4,90 € : synthèse cadastrale, images cadrées et sources environnementales en HTML et PDF. Dossier HTML et PDF disponible en mode test ; ventes réelles fermées.">
 <meta property="og:title" content="SiteHistory France — Chaque parcelle a une histoire">
 <meta property="og:description" content="Explorez les archives aériennes et les informations publiques sur votre terrain.">
+<meta name="theme-color" content="#173e35">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23173e35'/%3E%3Cpolygon points='8,12 20,7 25,16 20,25 9,22' fill='none' stroke='%23f3b73a' stroke-width='2.4' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Newsreader:ital,opsz,wght@0,6..72,300..700;1,6..72,300..700&display=swap" rel="stylesheet">
+
 <style>
-:root{--ink:#183c34;--forest:#173d34;--forest2:#0f302a;--sage:#6e8478;--mint:#ceeaaa;--paper:#f8f9f4;--line:#dfe6dc;--cream:#f0f4eb;--serif:Georgia,"Times New Roman",serif;font-family:Inter,"Segoe UI",system-ui,sans-serif;color:var(--ink)}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);-webkit-font-smoothing:antialiased}
-a{color:inherit}button,input{font:inherit}a:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #76bb86;outline-offset:3px}
-.wrap{max-width:1190px;width:calc(100% - 52px);margin:auto}
-.nav{display:flex;align-items:center;justify-content:space-between;height:78px;gap:18px}.nav-shell{border-bottom:1px solid #e1e8de;background:#fbfcf8}
-.brand{display:flex;align-items:center;gap:11px;text-decoration:none;font-size:21px;letter-spacing:-1px;font-weight:820;white-space:nowrap}.brand b{font-weight:500;color:#7d9185}
-.mark{height:38px;width:38px;background:var(--forest);border-radius:11px;display:grid;place-items:center;color:var(--mint)}
-.navlinks{display:flex;align-items:center;gap:29px;font-size:13px;font-weight:650}.navlinks>a{text-decoration:none;color:#546e5e}.navlinks>a:hover{color:#244a3c}
-.pillbutton,.button{display:inline-flex;align-items:center;justify-content:center;gap:11px;text-decoration:none;border-radius:12px;font-size:14px;font-weight:750;transition:transform .15s,background .15s}.pillbutton:hover,.button:hover{transform:translateY(-2px)}
-.pillbutton{background:var(--forest);color:#fff!important;padding:13px 19px}
-.button{padding:17px 25px;border:1px solid transparent}.bright{background:var(--mint);color:#1c442e}.bright:hover{background:#e0f3bd}.line{color:#e8f4e9;border-color:#68877b;background:transparent}
-.hero{background:radial-gradient(circle at 92% 7%,#2c594a 0%,transparent 36%),linear-gradient(130deg,#102f2a,#173e35);color:#f5f8ee;overflow:hidden}
-.hero .wrap{display:grid;grid-template-columns:1.04fr .96fr;gap:73px;align-items:center;padding:94px 0 107px}
-.eyebrow{display:block;font-weight:820;letter-spacing:.15em;font-size:11px;color:#a9d9a9;text-transform:uppercase;margin:0 0 19px}
-h1,h2,h3,p{margin-top:0}h1,h2{font-family:var(--serif);font-weight:400;letter-spacing:-.045em}
-h1{font-size:clamp(50px,5.6vw,83px);line-height:1.07;margin-bottom:25px}h1 em{color:var(--mint);font-style:italic}
-.lede{max-width:555px;color:#c2d7cd;font-size:17px;line-height:1.78}
-.actions{display:flex;gap:13px;flex-wrap:wrap;margin-top:29px}
-.benefits{display:flex;gap:20px;flex-wrap:wrap;color:#bad3bf;font-size:12px;margin-top:40px}.benefits b{color:var(--mint);margin-right:5px}
-.viewer{background:#f4f6ed;border-radius:19px;overflow:hidden;border:7px solid rgba(253,255,246,.12);box-shadow:0 35px 80px #02161175;transform:rotate(1.4deg);color:#254e3c}
-.viewerhead{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;background:#f5f8f0;font-size:11px;font-weight:800}
-.dots{display:flex;gap:5px}.dots i{display:block;height:7px;width:7px;border-radius:50%;background:#c5d3c3}.dots i:first-child{background:#74a78b}
-.map{position:relative;overflow:hidden;aspect-ratio:1.12;background:#839b7a;isolation:isolate}
-.map svg{display:block;position:absolute;inset:0;width:100%;height:100%}
-.map .old{clip-path:inset(0 calc(100% - var(--split,50%)) 0 0);filter:grayscale(.85) sepia(.24);z-index:2}
-.splitline{position:absolute;z-index:3;left:var(--split,50%);top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 12px #17332b}
-.splitline:after{content:"↔";position:absolute;top:49%;left:50%;transform:translate(-50%,-50%);height:39px;width:39px;border:2px solid white;background:#e5f1d9;color:#24573c;display:grid;place-items:center;border-radius:50%;font-weight:850;font-size:20px}
-.mapbadge{position:absolute;z-index:4;top:13px;background:#15382ec9;color:#fff;border-radius:7px;padding:9px 12px;font-weight:850;letter-spacing:.05em;font-size:10px}
-.mapbadge.a{left:13px}.mapbadge.b{right:13px}
-.viewfoot{display:flex;justify-content:space-between;align-items:center;padding:15px 17px;font-size:11px;font-weight:750;color:#3b6550;gap:10px}
-.micro{font-size:11px;line-height:1.55;color:#b4c9b9;max-width:460px;margin:14px 3px 0}
-.band{background:#e6eee1;border-bottom:1px solid #d8e3d3}.band .wrap{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px 32px;padding:22px 0;color:#51715c;font-size:12px;font-weight:750}
-.section{padding:94px 0}.intro{text-align:center;max-width:760px;margin:0 auto 47px}.kicker{display:block;color:#5d906c;letter-spacing:.16em;font-size:11px;font-weight:850;text-transform:uppercase;margin-bottom:17px}
-h2{font-size:clamp(35px,4.1vw,56px);line-height:1.15;margin-bottom:17px}.intro>p{color:#6d8576;line-height:1.73;font-size:15px}
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-.card{background:white;padding:30px;border:1px solid var(--line);border-radius:19px;min-height:250px;box-shadow:0 10px 40px #244c2d07}
-.symbol{height:51px;width:51px;display:grid;place-items:center;border-radius:14px;background:#e9f3df;color:#436e4c;font-size:23px;margin-bottom:26px}
-.card h3{font-size:18px;letter-spacing:-.4px;margin-bottom:12px}.card p{color:#6a8072;font-size:14px;line-height:1.75;margin:0}
-.light-section{background:#fff}.splitgrid{display:grid;grid-template-columns:.92fr 1.08fr;gap:74px;align-items:center}
-.explain p{color:#6b8072;font-size:15px;line-height:1.75}
-.checks{list-style:none;padding:0;margin:24px 0 0;display:grid;gap:17px}.checks li{display:flex;gap:13px;font-size:14px;font-weight:650;line-height:1.55;color:#44634f}.checks li:before{content:"✓";width:24px;height:24px;border-radius:50%;background:#e1f1d7;display:grid;place-items:center;color:#2b744d;flex-shrink:0}
-.interactive{border:1px solid #d8e5d7;background:#f4f7ef;border-radius:20px;padding:18px;box-shadow:0 20px 40px #29452b11}
-.interactive .map{aspect-ratio:1.47;border-radius:12px}
-.sliderlabel{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#4c715b;font-size:12px;font-weight:800;margin:19px 3px 9px}
-input[type=range]{display:block;width:100%;cursor:ew-resize;accent-color:#2c664b;margin:12px 0}
-.caption{font-size:11px;color:#819185;line-height:1.62;margin:12px 2px 0}
-.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}.step{padding:10px 10px 0}.stepid{color:#8ba994;font-weight:800;font-size:13px;display:flex;align-items:center;gap:15px;margin-bottom:22px}.stepid:after{content:"";height:1px;background:#dce7da;flex:1}.step h3{font-size:19px}.step p{font-size:14px;line-height:1.75;color:#6a8273}
-.price-section{background:#e9f1e5}.pricegrid{display:grid;grid-template-columns:1fr 1fr;gap:77px;align-items:center}
-.pricecopy>p{color:#66806b;line-height:1.8;font-size:15px}.pricebox{background:#fff;border-radius:23px;padding:36px;border:1px solid #cddfc8;box-shadow:0 20px 70px #234f3014}
-.tag{background:#e7f4de;color:#42734e;border-radius:30px;display:inline-block;padding:9px 14px;font-size:10px;font-weight:850;letter-spacing:.13em}
-.amount{font-family:var(--serif);font-size:67px;letter-spacing:-.055em;margin:19px 0 7px}.amount small{font:500 14px Inter,system-ui;color:#788b7b;letter-spacing:0}
-.pricebox>p{font-size:14px;color:#697e70;line-height:1.7}.pricebox ul{list-style:none;padding:16px 0 8px;border-top:1px solid #e4ece0;margin:20px 0}
-.pricebox li{font-size:14px;padding:8px 0;font-weight:650;color:#41644e}.pricebox li:before{content:"✓";color:#348951;margin-right:11px}
-.pricebox .button{background:#173d34;color:#fff;width:100%}.pricebox .disclaimer{font-size:11px;color:#7b9080;margin:16px 0 0}
-.test{font-size:12px;line-height:1.6;border:1px solid #eed59c;background:#fff7e3;color:#7e5c26;border-radius:12px;padding:14px 16px;margin:20px 0 0}
-.offer-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}.offer{border:1px solid var(--line);background:white;border-radius:19px;padding:30px}.offer.full{border:2px solid #568263;background:#f2f7ec}.offer h3{font:400 30px var(--serif);margin:12px 0}.offer p,.offer li{font-size:14px;line-height:1.75;color:#526e5a}.offer ul{padding-left:20px}.offer .button{background:var(--forest);color:white}.report-outline{margin:0;padding-left:24px;display:grid;gap:20px}.report-outline li{padding-left:6px;color:#526e5a;font-size:14px;line-height:1.6}.report-outline strong{display:block;color:var(--ink);font-size:16px}.source-link{display:inline-flex;margin:12px 0;font-weight:750;color:#285e44}.offer-note{max-width:840px;margin:24px auto 0;font-size:14px;color:#526e5a;line-height:1.8}.launch-state{border-left:4px solid #ae7a28;background:#fff7e3;color:#644c27;padding:16px 20px;font-size:14px;line-height:1.7;margin-top:24px}
-.faq{max-width:850px;margin:0 auto}.faq details{border-bottom:1px solid #dce7d9}.faq summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:20px;padding:22px 0;font-size:16px;font-weight:750}.faq summary::-webkit-details-marker{display:none}.faq summary:after{content:"+";color:#578360;font-size:23px;font-weight:400}.faq details[open] summary:after{content:"−"}.faq details p{color:#6d8373;font-size:14px;line-height:1.75;padding:0 0 22px;margin:0}
-.bottom{background:#183d34;color:#fff;padding:64px 0}.bottomgrid{display:flex;align-items:center;justify-content:space-between;gap:25px}.bottom h2{margin:0;font-size:clamp(30px,3.8vw,46px)}.bottom p{color:#bdd2c0;font-size:14px;margin:12px 0 0}
-footer{background:#102f29;color:#abc5b2;padding:33px 0;font-size:12px;line-height:1.7}.foot{display:flex;align-items:flex-start;justify-content:space-between;gap:30px;flex-wrap:wrap}.foot>div:first-child{max-width:600px}footer strong{color:#f6fff4}.footnav{display:flex;gap:17px;flex-wrap:wrap}.footnav a{text-decoration:none}.footnav a:hover{text-decoration:underline}
-@media(max-width:940px){.hero .wrap{gap:35px}.splitgrid,.pricegrid{gap:37px}.navlinks{gap:16px}}
-@media(max-width:750px){.wrap{width:calc(100% - 36px)}.nav{height:66px}.brand{font-size:18px}.navlinks a:not(.pillbutton){display:none}.pillbutton{padding:11px 12px;font-size:12px}
-.hero .wrap{grid-template-columns:1fr;padding:64px 0 72px;gap:44px}.hero h1{font-size:clamp(48px,10vw,69px)}.viewer{transform:none;max-width:550px}.benefits{gap:10px 19px}.section{padding:69px 0}.cards,.steps,.splitgrid,.pricegrid{grid-template-columns:1fr}.card{min-height:auto}.pricegrid{gap:29px}.pricebox{padding:25px}.steps{gap:13px}.step{padding:0}.bottomgrid{align-items:flex-start;flex-direction:column}.intro{margin-bottom:34px}}
-@media(max-width:405px){.brand b{display:none}.actions .button{width:100%}.amount{font-size:56px}}
-@media(max-width:750px){.offer-grid{grid-template-columns:1fr}.offer{padding:24px}}
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.button,.pillbutton{transition:none}}
+:root{
+  --g-950:#0d2722;
+  --g-900:#12332c;
+  --g-800:#173e35;
+  --g-700:#21574a;
+  --g-600:#2f7261;
+  --paper:#eef1eb;
+  --paper-2:#e2e8df;
+  --sheet:#fbfcf9;
+  --ink:#16251f;
+  --ink-2:#4a5c55;
+  --line:rgba(22,37,31,.16);
+  --amber:#f3b73a;
+  --ui:'Bricolage Grotesque','Helvetica Neue',Arial,sans-serif;
+  --text:'Newsreader',Georgia,'Times New Roman',serif;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:16px;-webkit-text-size-adjust:100%}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;font:400 1.0625rem/1.62 var(--text);color:var(--ink);background:var(--paper);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+img,svg{max-width:100%}
+a{color:inherit}
+ul,ol{margin:0;padding:0;list-style:none}
+p{margin:0 0 1em}
+:focus-visible{outline:3px solid var(--g-600);outline-offset:3px;border-radius:2px}
+.hero :focus-visible,.bg-green :focus-visible,.cta :focus-visible,.foot :focus-visible{outline-color:var(--amber)}
+
+.wrap{width:min(1180px,100% - 2*clamp(20px,4vw,48px));margin-inline:auto}
+.skip{position:absolute;left:-999px;top:8px;background:#fff;color:var(--ink);padding:8px 14px;font:600 .9rem var(--ui);z-index:20}
+.skip:focus{left:8px}
+.ic{width:1.15em;height:1.15em;flex:none}
+
+/* ---------- Typography ---------- */
+h1,h2,h3{font-family:var(--ui);margin:0;font-optical-sizing:auto;letter-spacing:-.02em}
+h2{font-size:clamp(1.95rem,3.5vw,3.05rem);line-height:1.07;font-weight:700;letter-spacing:-.028em;text-wrap:balance}
+h3{font-size:1.3rem;line-height:1.2;font-weight:650}
+.lead{font-size:1.25rem;line-height:1.55;max-width:40rem}
+.measure{max-width:38rem}
+.muted{color:var(--ink-2)}
+
+/* ---------- Buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5em;padding:.85em 1.3em;border-radius:4px;font:600 1rem/1.2 var(--ui);text-decoration:none;border:1.5px solid transparent;cursor:pointer;transition:background-color .15s,color .15s,border-color .15s}
+.btn--amber{background:var(--amber);color:#1c2a14}
+.btn--amber:hover{background:#ffc95a}
+.btn--green{background:var(--g-800);color:#fff}
+.btn--green:hover{background:var(--g-700)}
+.btn--line{border-color:currentColor;color:var(--g-800)}
+.btn--line:hover{background:var(--g-800);color:#fff;border-color:var(--g-800)}
+.btn--line-light{border-color:rgba(255,255,255,.55);color:#fff}
+.btn--line-light:hover{background:#fff;color:var(--g-800);border-color:#fff}
+.btn-row{display:flex;flex-wrap:wrap;gap:12px}
+.textlink{font:600 1rem var(--ui);text-underline-offset:4px;text-decoration-thickness:1.5px}
+
+/* ---------- Hero ---------- */
+.hero{position:relative;overflow:hidden;color:#fff;background-color:var(--g-800);
+  background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+  background-size:72px 72px;background-position:-1px -1px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:24px;padding-block:22px}
+.brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none;font:700 1.2rem var(--ui);letter-spacing:-.02em}
+.brand span{font-weight:400;opacity:.75}
+.brand svg{width:30px;height:30px}
+.nav{display:flex;align-items:center;gap:30px}
+.nav a{font:500 .98rem var(--ui);text-decoration:none;color:#d3e4dc}
+.nav a:hover{color:#fff;text-decoration:underline;text-underline-offset:5px}
+.nav .btn{color:#fff;padding:.55em 1em;font-size:.95rem}
+.nav .btn:hover{color:var(--g-800)}
+.hero__grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(32px,5vw,76px);align-items:center;padding-block:clamp(28px,6vw,80px) clamp(44px,6vw,72px)}
+.hero h1{font-size:clamp(2.6rem,5.1vw,4.5rem);line-height:1;font-weight:700;letter-spacing:-.035em;text-wrap:balance;margin-bottom:.45em}
+.hero .lead{color:#cfe1d9;margin-bottom:1.6em}
+.hero__note{margin:1.4em 0 0;font-size:.98rem;color:#b5cdc3;max-width:32rem}
+.trust{display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:22px;font:500 .95rem var(--ui);color:#e3efe9}
+.trust li{display:inline-flex;align-items:center;gap:8px}
+.trust .ic{color:var(--amber)}
+
+/* aerial print comparator */
+.print{margin:0;background:#f3f4ee;padding:12px 12px 0;border-radius:3px;box-shadow:0 34px 60px -34px rgba(0,0,0,.65);color:var(--ink)}
+.print figcaption{padding:12px 4px 15px;font-size:.88rem;line-height:1.4;color:#4d5a54}
+.print figcaption strong{display:block;font:600 .95rem var(--ui);color:var(--ink);margin-bottom:2px}
+.print figcaption em{font-style:italic}
+.comparator{position:relative;aspect-ratio:5/4;overflow:hidden;--pos:50%;user-select:none;-webkit-user-select:none;background:#8c9a80}
+.comparator svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.layer--archive{clip-path:inset(0 calc(100% - var(--pos)) 0 0);filter:grayscale(1) sepia(.16) contrast(1.08)}
+.comparator input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:ew-resize;z-index:3;touch-action:pan-y}
+.divider{position:absolute;top:0;bottom:0;left:var(--pos);width:2px;margin-left:-1px;background:#fff;z-index:2;pointer-events:none}
+.knob{position:absolute;top:50%;left:var(--pos);width:46px;height:46px;border-radius:50%;background:#fff;color:var(--g-800);display:grid;place-items:center;transform:translate(-50%,-50%);box-shadow:0 2px 12px rgba(0,0,0,.4);z-index:2;pointer-events:none}
+.knob svg{position:static;width:24px;height:24px}
+.comparator input:focus-visible ~ .knob{outline:3px solid var(--amber);outline-offset:3px}
+.tag{position:absolute;bottom:12px;padding:5px 10px;border-radius:3px;font:600 .8rem var(--ui);background:rgba(13,39,34,.84);color:#fff;z-index:2;pointer-events:none}
+.tag--l{left:12px}
+.tag--r{right:12px}
+
+/* sources strip */
+.strip{border-top:1px solid rgba(255,255,255,.18)}
+.strip ul{display:grid;grid-template-columns:repeat(4,1fr)}
+.strip li{padding:18px 20px;font:600 .98rem var(--ui);color:#e5f0eb;border-left:1px solid rgba(255,255,255,.18)}
+.strip li:first-child{border-left:0;padding-left:0}
+
+/* ---------- Sections ---------- */
+.section{padding-block:clamp(64px,9vw,120px)}
+.bg-paper2{background:var(--paper-2)}
+.bg-green{background:var(--g-800);color:#fff}
+.section h2{margin-bottom:.5em}
+.intro{max-width:48rem}
+
+.trio{display:grid;grid-template-columns:repeat(3,1fr);margin-top:clamp(36px,5vw,60px);border-top:1.5px solid var(--ink)}
+.trio li{padding:30px 32px 6px 0}
+.trio li + li{padding-left:32px;border-left:1px solid var(--line)}
+.trio .ic{width:42px;height:42px;color:var(--g-600);margin-bottom:18px}
+.trio h3{margin-bottom:.45em}
+.trio p{color:var(--ink-2);margin:0}
+
+.split{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,5fr);gap:clamp(32px,6vw,88px);align-items:start}
+.split .btn-row{margin-top:28px}
+.source-note{margin:22px 0 0;font-style:italic;color:var(--ink-2)}
+.checks{border-bottom:1px solid var(--line)}
+.checks li{display:flex;gap:14px;padding:18px 0;border-top:1px solid var(--line);font-size:1.1rem}
+.checks .ic{color:#fff;background:var(--g-700);border-radius:50%;padding:4px;width:26px;height:26px;margin-top:2px}
+
+.dossier{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(32px,5vw,72px);margin-top:clamp(36px,5vw,56px);align-items:start}
+.sheet{position:sticky;top:24px;background:var(--sheet);border:1px solid var(--line);border-top:7px solid var(--g-800);padding:28px 30px 8px}
+.sheet h3{font-size:1.15rem;margin-bottom:6px}
+.sheet__cap{margin:0;padding:14px 0 18px;font-size:.9rem;font-style:italic;color:var(--ink-2);border-top:1px solid var(--line)}
+.toc{counter-reset:s;margin-top:14px}
+.toc li{counter-increment:s;display:grid;grid-template-columns:52px 1fr;column-gap:6px;padding:16px 0;border-top:1px solid var(--line)}
+.toc li::before{content:counter(s);grid-row:1 / span 2;font:300 2.3rem/1 var(--ui);color:var(--g-600);letter-spacing:-.04em}
+.toc strong{font:650 1.05rem var(--ui)}
+.toc span{color:var(--ink-2);font-size:.98rem;line-height:1.45}
+
+.offers{display:grid;gap:22px}
+.offer{padding:30px 32px;border-radius:4px}
+.offer--free{border:1.5px solid var(--g-800)}
+.offer--paid{background:var(--g-800);color:#fff}
+.pill{display:inline-block;margin-bottom:14px;padding:4px 11px;border-radius:999px;font:600 .82rem var(--ui)}
+.offer--free .pill{background:var(--g-800);color:#fff}
+.offer--paid .pill{background:var(--amber);color:#1c2a14}
+.offer h3{font-size:1.55rem;margin-bottom:.6em}
+.offer li{display:flex;gap:11px;padding:7px 0}
+.offer li .ic{margin-top:.25em;color:var(--g-600)}
+.offer--paid li .ic{color:var(--amber)}
+.offer .btn{margin-top:20px}
+.offer__strong{margin:22px 0 0;padding-top:18px;border-top:1px solid rgba(255,255,255,.25);font-weight:600}
+.fine{margin:22px 0 0;font-size:.97rem;color:var(--ink-2)}
+.fine + .fine{margin-top:14px}
+.fine strong{color:var(--ink)}
+details.more{margin-top:22px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+details.more summary{cursor:pointer;padding:15px 0;font:600 1rem var(--ui)}
+details.more p{margin:0 0 16px;color:var(--ink-2);font-size:.97rem}
+.note{margin-top:22px;padding:16px 20px;border-left:4px solid var(--amber);background:rgba(243,183,58,.16);font-size:.98rem}
+.note p{margin:0}
+
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(24px,4vw,56px);margin-top:clamp(36px,5vw,60px)}
+.step{border-top:2px solid rgba(255,255,255,.28);padding-top:18px;position:relative}
+.step::before{content:"";position:absolute;top:-2px;left:0;width:64px;height:2px;background:var(--amber)}
+.step__n{display:block;font:300 clamp(3.4rem,6vw,5.2rem)/1 var(--ui);color:var(--amber);letter-spacing:-.05em;margin-bottom:10px}
+.step h3{margin-bottom:.5em}
+.step p{color:#c6dad1;margin:0}
+.bg-green .intro p{color:#c6dad1}
+
+.tarif{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,5fr);gap:clamp(32px,6vw,88px);align-items:center}
+.tarif h2{margin-bottom:.6em}
+.price{background:var(--g-800);color:#fff;padding:clamp(26px,4vw,40px);border-radius:4px}
+.price .pill{background:var(--amber);color:#1c2a14}
+.price__amount{font:700 clamp(3.3rem,7vw,5.4rem)/1 var(--ui);letter-spacing:-.045em}
+.price__amount small{font:500 1.15rem var(--ui);letter-spacing:0;opacity:.8;margin-left:6px}
+.price__desc{margin:14px 0 20px;color:#cfe1d9}
+.price ul{margin-bottom:6px}
+.price li{display:flex;gap:11px;padding:7px 0;border-top:1px solid rgba(255,255,255,.16)}
+.price li .ic{color:var(--amber);margin-top:.25em}
+.price .btn{margin-top:20px;width:100%}
+.price__note{margin:18px 0 0;font-size:.92rem;color:#b5cdc3}
+.disclaimer{margin-top:clamp(36px,5vw,56px);padding-top:20px;border-top:1px solid var(--line);font-size:.95rem;color:var(--ink-2);max-width:52rem}
+
+.faq{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,7fr);gap:clamp(28px,6vw,88px);align-items:start}
+.faq__head{position:sticky;top:24px}
+.faq__list{border-bottom:1px solid var(--line)}
+.faq details{border-top:1px solid var(--line)}
+.faq summary{display:flex;justify-content:space-between;align-items:baseline;gap:20px;padding:22px 0;cursor:pointer;font:600 1.18rem/1.3 var(--ui);list-style:none}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";font:300 1.8rem/1 var(--ui);color:var(--g-600);flex:none}
+.faq details[open] summary::after{content:"–"}
+.faq details p{margin:0 0 24px;max-width:38rem;color:var(--ink-2)}
+
+.cta{background:var(--g-950);color:#fff;padding-block:clamp(64px,9vw,112px);overflow:hidden}
+.cta__grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,4fr);gap:32px;align-items:center}
+.cta h2{font-size:clamp(2.2rem,4.6vw,4rem);margin-bottom:.4em}
+.cta p{font-size:1.25rem;color:#c6dad1;max-width:34rem;margin-bottom:1.6em}
+.cta__art{width:100%;max-width:340px;justify-self:end;color:var(--amber)}
+.foot{background:var(--g-950);color:#a9c0b6;border-top:1px solid rgba(255,255,255,.14);padding-block:36px 44px;font-size:.95rem}
+.foot__grid{display:flex;flex-wrap:wrap;justify-content:space-between;gap:24px 48px}
+.foot .brand{color:#fff;margin-bottom:10px}
+.foot p{margin:0;max-width:34rem}
+.foot nav{display:flex;flex-wrap:wrap;gap:10px 24px;align-content:flex-start;font:500 .95rem var(--ui)}
+.foot nav a{text-decoration:none}
+.foot nav a:hover{color:#fff;text-decoration:underline;text-underline-offset:4px}
+
+/* ---------- Responsive ---------- */
+@media (max-width:980px){
+  .hero__grid,.split,.dossier,.tarif,.faq,.cta__grid{grid-template-columns:1fr}
+  .sheet,.faq__head{position:static}
+  .cta__art{justify-self:start;max-width:220px;order:-1}
+  .nav a:not(.btn){display:none}
+}
+@media (max-width:760px){
+  .trio,.steps{grid-template-columns:1fr}
+  .trio li,.trio li + li{padding:26px 0 8px;border-left:0;border-top:1px solid var(--line)}
+  .trio{border-top:0}
+  .strip ul{grid-template-columns:1fr 1fr}
+  .strip li:nth-child(odd){border-left:0;padding-left:0}
+  .strip li:nth-child(n+3){border-top:1px solid rgba(255,255,255,.18)}
+}
+@media (max-width:480px){
+  .btn-row .btn{width:100%}
+  .offer{padding:24px 22px}
+  .sheet{padding:24px 20px 6px}
+}
 </style>
 </head>
 <body>
-<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden" xmlns="http://www.w3.org/2000/svg">
-<symbol id="land" viewBox="0 0 600 470">
- <rect width="600" height="470" fill="#829f78"/>
- <path d="M0 0H230L270 174 0 228Z" fill="#91af7b"/><path d="M330 0H600V208L434 188Z" fill="#6f9977"/>
- <path d="M0 278 167 245 250 470H0Z" fill="#61866d"/><path d="M423 251 600 198V470H352Z" fill="#76977a"/>
- <path d="M103 0 180 0 421 470 327 470Z" fill="#c5bfaa"/>
- <path d="M-40 285 640 150" stroke="#d1c8b0" stroke-width="55"/><path d="M-40 285 640 150" stroke="#aab2a0" stroke-width="34"/>
- <path d="M-40 285 640 150" stroke="#f8edcd" stroke-width="2" stroke-dasharray="15 12"/>
- <g fill="#50765e" opacity=".85"><circle cx="60" cy="60" r="44"/><circle cx="110" cy="93" r="31"/><circle cx="535" cy="59" r="42"/><circle cx="568" cy="97" r="31"/><circle cx="36" cy="417" r="57"/><circle cx="521" cy="408" r="60"/></g>
- <g fill="#9eb98a"><circle cx="53" cy="55" r="30"/><circle cx="536" cy="55" r="31"/><circle cx="521" cy="402" r="42"/></g>
- <g fill="#e1dcc5"><rect x="56" y="116" width="78" height="58" transform="rotate(-14 56 116)"/><rect x="405" y="94" width="95" height="58" transform="rotate(-10 405 94)"/><rect x="402" y="299" width="92" height="70" transform="rotate(-10 402 299)"/><rect x="174" y="332" width="73" height="54" transform="rotate(-12 174 332)"/></g>
- <g fill="#66796d"><rect x="49" y="109" width="78" height="58" transform="rotate(-14 49 109)"/><rect x="398" y="86" width="95" height="58" transform="rotate(-10 398 86)"/><rect x="395" y="291" width="92" height="70" transform="rotate(-10 395 291)"/><rect x="167" y="325" width="73" height="54" transform="rotate(-12 167 325)"/></g>
- <path d="m264 73 153-31 57 144-164 33Z" fill="#e6f0b0" fill-opacity=".2" stroke="#effac9" stroke-width="4"/>
- <g fill="none" stroke="#eef4d8" stroke-opacity=".6" stroke-dasharray="6 5" stroke-width="2"><path d="M29 47 169 21 202 182 0 222"/><path d="m282 52 128-26 75 165-170 42"/><path d="m355 261 159-32 54 203-174 28"/></g>
- <path d="M342 110 405 96 417 154 352 170Z" fill="#ddcfaa"/><path d="M339 105 404 91 414 146 351 160Z" fill="#455d52"/>
-</symbol>
-<symbol id="land-old" viewBox="0 0 600 470">
- <rect width="600" height="470" fill="#999e76"/>
- <path d="M0 0H230L270 174 0 228Z" fill="#b4b38b"/><path d="M330 0H600V208L434 188Z" fill="#929c78"/>
- <path d="M0 278 167 245 250 470H0Z" fill="#808c6b"/><path d="M423 251 600 198V470H352Z" fill="#a3a987"/>
- <path d="M103 0 180 0 421 470 327 470Z" fill="#b6aa91"/>
- <path d="M-40 285 640 150" stroke="#bfb397" stroke-width="53"/>
- <g fill="#737d64" opacity=".85"><circle cx="60" cy="60" r="44"/><circle cx="110" cy="93" r="31"/><circle cx="535" cy="59" r="42"/><circle cx="568" cy="97" r="31"/><circle cx="36" cy="417" r="57"/><circle cx="521" cy="408" r="60"/></g>
- <g fill="#d0c5a4"><rect x="56" y="116" width="78" height="58" transform="rotate(-14 56 116)"/><rect x="405" y="94" width="95" height="58" transform="rotate(-10 405 94)"/></g>
- <g fill="#5d6d5f"><rect x="49" y="109" width="78" height="58" transform="rotate(-14 49 109)"/><rect x="398" y="86" width="95" height="58" transform="rotate(-10 398 86)"/></g>
- <path d="m264 73 153-31 57 144-164 33Z" fill="#e6d5a7" fill-opacity=".17" stroke="#f1e4b9" stroke-width="4"/>
- <g fill="none" stroke="#e8dbc5" stroke-opacity=".6" stroke-dasharray="6 5" stroke-width="2"><path d="M29 47 169 21 202 182 0 222"/><path d="m282 52 128-26 75 165-170 42"/></g>
- <g fill="#6b8668" opacity=".9"><circle cx="344" cy="119" r="20"/><circle cx="390" cy="129" r="15"/><circle cx="364" cy="156" r="18"/></g>
-</symbol>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-parcel" viewBox="0 0 24 24"><polygon points="4.5,8 15,3.5 20.5,12 16.5,20.5 6,18.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><g fill="currentColor"><circle cx="4.5" cy="8" r="1.5"/><circle cx="15" cy="3.5" r="1.5"/><circle cx="20.5" cy="12" r="1.5"/><circle cx="16.5" cy="20.5" r="1.5"/><circle cx="6" cy="18.5" r="1.5"/></g></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.2l3.6 2.2"/></g></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3h8l4 4v14h-12z"/><path d="M14.5 3v4h4M9.5 12h5.5M9.5 15.5h5.5"/></g></symbol>
+  <symbol id="i-arrows" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7l-5 5 5 5M15 7l5 5-5 5"/></g></symbol>
+  <symbol id="i-logo" viewBox="0 0 32 32"><polygon points="6,12 19,6 26,16 20,26 8,23" fill="none" stroke="#f3b73a" stroke-width="2.4" stroke-linejoin="round"/><circle cx="16" cy="16" r="2.4" fill="#f3b73a"/></symbol>
 </svg>
 
-<header class="nav-shell">
-<nav class="wrap nav" aria-label="Navigation"><a class="brand" href="#accueil"><span class="mark">◈</span>SiteHistory <b>France</b></a><div class="navlinks"><a href="#fonctionnalites">Le produit</a><a href="#demo">Démonstration</a><a href="#fonctionnement">Comment ça marche</a><a class="pillbutton" href="#tarif">Offre pilote ↗</a></div></nav>
-</header>
+<a class="skip" href="#fonctionnalites">Aller au contenu</a>
+
+<!-- ================= HERO ================= -->
+<div class="hero" id="accueil">
+  <div class="wrap">
+    <header class="top">
+      <a class="brand" href="#accueil"><svg aria-hidden="true"><use href="#i-logo"/></svg>SiteHistory <span>France</span></a>
+      <nav class="nav" aria-label="Navigation principale">
+        <a href="#fonctionnalites">Le produit</a>
+        <a href="#demo">Démonstration</a>
+        <a href="#fonctionnement">Comment ça marche</a>
+        <a class="btn btn--line-light" href="#tarif">Offre pilote</a>
+      </nav>
+    </header>
+
+    <div class="hero__grid">
+      <div>
+        <h1>Chaque parcelle a une histoire. Retrouvez-la.</h1>
+        <p class="lead">Photographies aériennes anciennes, cadastre et principaux indices environnementaux publics : les informations d'un terrain réunies dans un seul dossier exploratoire.</p>
+        <div class="btn-row">
+          <a class="btn btn--amber" href="./demo.html">Explorer ma parcelle gratuitement</a>
+          <a class="btn btn--line-light" href="#dossier">Que contient le dossier à 4,90 € ?</a>
+        </div>
+        <p class="hero__note">Explorez gratuitement, puis essayez le dossier HTML + PDF avec un paiement fictif. Aucun achat réel n’est ouvert.</p>
+        <ul class="trust">
+          <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>France métropolitaine</li>
+          <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Données publiques</li>
+          <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Sans abonnement</li>
+        </ul>
+      </div>
+
+      <figure class="print">
+        <div class="comparator" id="comparator" role="group" aria-label="Illustration fictive de comparaison, consulter la démo pour les vraies images IGN">
+          <svg class="layer layer--recent" id="svg-recent" viewBox="0 0 800 640" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+          <svg class="layer layer--archive" id="svg-archive" viewBox="0 0 800 640" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+          <svg class="layer layer--parcel" id="svg-parcel" viewBox="0 0 800 640" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+          <input type="range" min="0" max="100" step="0.1" value="50" aria-label="Faire varier l’illustration fictive : schéma ancien à gauche, récent à droite">
+          <div class="divider"></div>
+          <div class="knob"><svg aria-hidden="true"><use href="#i-arrows"/></svg></div>
+          <span class="tag tag--l">Schéma ancien</span>
+          <span class="tag tag--r">Schéma récent</span>
+        </div>
+        <figcaption>
+          <strong>Comparer les époques : 1950–1965 / récent</strong>
+          <em>Illustration stylisée et fictive, non issue de véritables photographies aériennes ou d'un dossier réel.</em>
+        </figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <div class="strip">
+    <div class="wrap">
+      <ul>
+        <li>Cadastre</li>
+        <li>Imagerie IGN historique</li>
+        <li>Géorisques</li>
+        <li>Exports documentés</li>
+      </ul>
+    </div>
+  </div>
+</div>
 
 <main>
-<section class="hero" id="accueil">
-<div class="wrap">
-<div>
-<p class="eyebrow">Une nouvelle lecture de votre terrain</p>
-<h1>Chaque parcelle a une histoire.<br><em>Retrouvez-la.</em></h1>
-<p class="lede">Photographies aériennes anciennes, cadastre et principaux indices environnementaux publics : les informations d'un terrain réunies dans un seul dossier exploratoire.</p>
-<div class="actions"><a class="button bright" href="./demo.html">Explorer ma parcelle gratuitement ↗</a><a class="button line" href="#dossier">Que contient le dossier à 4,90 € ?</a></div>
-<p style="color:#c2d7cd;font-size:13px;line-height:1.7;margin-top:20px">Explorez gratuitement, puis essayez le dossier HTML + PDF avec un paiement fictif. Aucun achat réel n’est ouvert.</p>
-<div class="benefits"><span><b>✓</b> France métropolitaine</span><span><b>✓</b> Données publiques</span><span><b>✓</b> Sans abonnement</span></div>
-</div>
-<div>
-<div class="viewer">
-<div class="viewerhead"><span class="dots"><i></i><i></i><i></i></span><span>COMPARAISON HISTORIQUE</span><span>◈</span></div>
-<div class="map" style="--split:50%">
-<svg viewBox="0 0 600 470" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#land"/></svg>
-<svg viewBox="0 0 600 470" preserveAspectRatio="xMidYMid slice" class="old" aria-hidden="true"><use href="#land-old"/></svg>
-<div class="splitline"></div><span class="mapbadge a">ARCHIVES</span><span class="mapbadge b">AUJOURD'HUI</span>
-</div>
-<div class="viewfoot"><span>◈  Comparer les époques</span><span>1950–1965 → récent</span></div>
-</div>
-<p class="micro">Illustration stylisée et fictive, non issue de véritables photographies aériennes ou d'un dossier réel.</p>
-</div>
-</div>
-</section>
-<div class="band"><div class="wrap"><span>◈ CADASTRE</span><span>◎ IMAGERIE IGN HISTORIQUE</span><span>◇ GÉORISQUES</span><span>↗ EXPORTS DOCUMENTÉS</span></div></div>
 
-<section class="section wrap" id="fonctionnalites">
-<div class="intro"><span class="kicker">Tout commence par une adresse</span><h2>Les bonnes informations, au même endroit.</h2><p>Les archives et les données publiques existent déjà. SiteHistory aide à les réunir et les explorer sans multiplier les onglets.</p></div>
-<div class="cards">
-<article class="card"><div class="symbol">▧</div><h3>Retrouvez la parcelle</h3><p>Recherchez une adresse, repérez sa géométrie cadastrale et confirmez la bonne parcelle avant toute interprétation.</p></article>
-<article class="card"><div class="symbol">◷</div><h3>Remontez dans le temps</h3><p>Découvrez les époques de photographies aériennes IGN disponibles et comparez leur évolution visuelle.</p></article>
-<article class="card"><div class="symbol">◎</div><h3>Conservez un dossier sourcé</h3><p>Le dossier rassemble les informations cadastrales, les images et les résultats environnementaux disponibles, avec leurs sources et leurs limites. Les téléchargements HTML et PDF sont accessibles après paiement test.</p></article>
-</div>
+<!-- ================= PRODUIT ================= -->
+<section class="section" id="fonctionnalites">
+  <div class="wrap">
+    <div class="intro">
+      <h2>Les bonnes informations, au même endroit.</h2>
+      <p class="lead muted">Les archives et les données publiques existent déjà. SiteHistory aide à les réunir et les explorer sans multiplier les onglets.</p>
+    </div>
+    <ul class="trio">
+      <li>
+        <svg class="ic" aria-hidden="true"><use href="#i-parcel"/></svg>
+        <h3>Retrouvez la parcelle</h3>
+        <p>Recherchez une adresse, repérez sa géométrie cadastrale et confirmez la bonne parcelle avant toute interprétation.</p>
+      </li>
+      <li>
+        <svg class="ic" aria-hidden="true"><use href="#i-clock"/></svg>
+        <h3>Remontez dans le temps</h3>
+        <p>Découvrez les époques de photographies aériennes IGN disponibles et comparez leur évolution visuelle.</p>
+      </li>
+      <li>
+        <svg class="ic" aria-hidden="true"><use href="#i-doc"/></svg>
+        <h3>Conservez un dossier sourcé</h3>
+        <p>Le dossier rassemble les informations cadastrales, les images et les résultats environnementaux disponibles, avec leurs sources et leurs limites. Les téléchargements HTML et PDF sont accessibles après paiement test.</p>
+      </li>
+    </ul>
+  </div>
 </section>
 
-<section class="section light-section" id="demo">
-<div class="wrap splitgrid">
-<div class="explain"><span class="kicker">Les images restent accessibles à la source</span><h2>Explorez gratuitement. Gardez ensuite une trace documentée.</h2><p>La démo permet de rechercher une adresse, de confirmer une parcelle et de comparer deux époques disponibles. Vous pouvez aussi ouvrir directement le comparateur officiel IGN.</p>
-<p><a class="button" style="background:#173d34;color:white;margin:4px 0 18px" href="./demo.html">Lancer la démo avec les vraies images IGN ↗</a></p>
-<a class="source-link" href="https://remonterletemps.ign.fr/" target="_blank" rel="noopener noreferrer">Consulter directement Remonter le temps — IGN ↗</a>
-<ul class="checks"><li>Adresse, référence cadastrale ou clic sur la carte</li><li>Parcelle choisie et confirmée par vous</li><li>Deux vues IGN distinctes lorsque disponibles</li><li>Exploration sans compte et sans paiement</li></ul></div>
-<div class="interactive">
-<h3>Le contenu du dossier</h3>
-<ol class="report-outline"><li><strong>Votre parcelle</strong>Référence, commune, surface cadastrale si fournie et géométrie du terrain.</li><li><strong>Deux époques d’imagerie</strong>Vues sur une même emprise, contours cadastraux, périodes et identifiants IGN.</li><li><strong>Le contexte environnemental</strong>Résultats publics disponibles, périmètre de recherche et état de chaque source.</li><li><strong>Des observations factuelles</strong>Constats documentaires, sans diagnostic automatique de pollution ou de changement.</li><li><strong>Les sources et les limites</strong>Date du dossier, références consultées et informations manquantes.</li></ol>
-<p class="caption">Structure du rapport généré. Ce sommaire ne constitue pas un exemple de dossier réel.</p>
-</div>
-</div></section>
-
-<section class="section wrap" id="dossier">
-<div class="intro"><span class="kicker">Ce qu’apporte le dossier</span><h2>De la consultation à un document que vous pouvez conserver.</h2><p>Les données publiques sont consultables gratuitement chez leurs producteurs. Les 4,90 € prévus rémunèrent leur rassemblement, leur mise en forme et la préparation du dossier pour la parcelle confirmée.</p></div>
-<div class="offer-grid">
-<article class="offer"><span class="tag">DISPONIBLE MAINTENANT</span><h3>Explorer — gratuit</h3><ul><li>Rechercher et confirmer sa parcelle.</li><li>Comparer les photographies IGN disponibles à l’écran.</li><li>Changer de période, zoomer et afficher les contours.</li><li>Ouvrir la source officielle IGN pour poursuivre la consultation.</li></ul><a class="button" href="./demo.html">Essayer sans compte ↗</a></article>
-<article class="offer full"><span class="tag">DOSSIER EN MODE TEST · 4,90 €</span><h3>Rassembler et conserver</h3><ul><li>Une fiche cadastrale et une carte de localisation réunies dans le dossier.</li><li>Des vues historique et récente préparées sur la même emprise, avec le terrain surligné.</li><li>Une synthèse des recherches Géorisques intégrées : résultats, nombres et distances lorsqu’ils sont calculables.</li><li>Des références, périodes et dates de consultation pour retrouver les sources.</li><li>Un HTML autonome avec images intégrées et un PDF à télécharger et à partager.</li></ul><p><strong>Paiement unique prévu, sans abonnement ni compte utilisateur.</strong> Aucun achat réel n’est ouvert à ce stade.</p></article>
-</div>
-<p class="offer-note">Selon les sources disponibles : CASIAS, SIS, ICPE, cavités, mouvements de terrain, argiles et inondation. Une recherche réussie sans résultat, une source indisponible, une requête en échec et une donnée non intégrée sont distinguées. Une absence de résultat ne prouve jamais une absence de risque.</p>
-<div class="launch-state"><strong>Où en est la version de test ?</strong> Le parcours complet est disponible en mode test : confirmez votre parcelle, vérifiez les données, effectuez un paiement fictif, puis téléchargez le HTML et le PDF. Une source essentielle indisponible peut bloquer la préparation. Les commandes réelles ne sont pas ouvertes.</div>
+<!-- ================= DEMO ================= -->
+<section class="section bg-paper2" id="demo">
+  <div class="wrap split">
+    <div>
+      <h2>Explorez gratuitement. Gardez ensuite une trace documentée.</h2>
+      <p class="lead muted">La démo permet de rechercher une adresse, de confirmer une parcelle et de comparer deux époques disponibles. Vous pouvez aussi ouvrir directement le comparateur officiel IGN.</p>
+      <div class="btn-row">
+        <a class="btn btn--green" href="./demo.html">Lancer la démo avec les vraies images IGN</a>
+        <a class="btn btn--line" href="https://remonterletemps.ign.fr/" target="_blank" rel="noopener">Consulter directement Remonter le temps — IGN ↗</a>
+      </div>
+      <p class="source-note">Les images restent accessibles à la source.</p>
+    </div>
+    <ul class="checks">
+      <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Adresse, référence cadastrale ou clic sur la carte</li>
+      <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Parcelle choisie et confirmée par vous</li>
+      <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Deux vues IGN distinctes lorsque disponibles</li>
+      <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Exploration sans compte et sans paiement</li>
+    </ul>
+  </div>
 </section>
 
-<section class="section wrap" id="fonctionnement">
-<div class="intro"><span class="kicker">Comment ça marche</span><h2>Choisir, vérifier, télécharger.</h2><p>Un parcours accessible sans compte, avec paiement et livraison en mode test.</p></div>
-<div class="steps">
-<div class="step"><div class="stepid">01</div><h3>Localisez</h3><p>Indiquez une adresse ou référence cadastrale et vérifiez visuellement le terrain sélectionné.</p></div>
-<div class="step"><div class="stepid">02</div><h3>Vérifiez le contenu</h3><p>Avant de proposer un paiement test, le serveur vérifie les données essentielles et prépare les exports. En cas de données essentielles indisponibles, la commande reste bloquée.</p></div>
-<div class="step"><div class="stepid">03</div><h3>Téléchargez</h3><p>Après vérification du paiement côté serveur, récupérez le HTML et le PDF par des liens temporaires. La livraison est disponible en mode test, sans création de compte.</p></div>
-</div></section>
+<!-- ================= DOSSIER ================= -->
+<section class="section" id="dossier">
+  <div class="wrap">
+    <div class="intro">
+      <h2>De la consultation à un document que vous pouvez conserver.</h2>
+      <p class="lead muted">Les données publiques sont consultables gratuitement chez leurs producteurs. Les 4,90 € prévus rémunèrent leur rassemblement, leur mise en forme et la préparation du dossier pour la parcelle confirmée.</p>
+    </div>
 
-<section class="section price-section" id="tarif">
-<div class="wrap pricegrid">
-<div class="pricecopy"><span class="kicker">Simple, ponctuel, transparent</span><h2>Un dossier prêt à relire et à partager.</h2><p>Évitez de reconstituer vos recherches à partir d’onglets et de captures dispersés. Le dossier rassemble les éléments consultés, leur provenance et leurs limites dans deux formats complémentaires.</p>
-<p>Le HTML conserve les images dans un fichier autonome. Le PDF permet une lecture et une impression paginées. Le document aide à préparer vos questions avant une visite ou un échange avec un professionnel.</p>
-</div>
-<div class="pricebox"><span class="tag">PILOTE EN MODE TEST</span><div class="amount">4,90 € <small>/ dossier</small></div><p>Dossier historique exploratoire d'une parcelle. Prix indicatif pour le lancement, non facturé pour les tests actuels.</p>
-<ul><li>Parcelle sélectionnée et confirmée par vous</li><li>Vues IGN cadrées et contours cadastraux</li><li>Résultats environnementaux disponibles et sourcés</li><li>HTML autonome + PDF téléchargeable</li><li>Dates, références et données manquantes explicites</li></ul>
-<a class="button" href="./demo.html">Essayer le dossier en mode test ↗</a>
-<div class="test"><strong>Parcours complet en mode test.</strong> Les 4,90 € affichés dans Stripe sont simulés. Aucun débit réel ne peut être effectué. Le tarif commercial prévu reste de 4,90 € par dossier, sans abonnement.</div>
-<p class="disclaimer">SiteHistory n'est ni une étude de pollution des sols, ni une expertise immobilière, ni une vérification juridique de conformité.</p>
-</div>
-</div></section>
+    <div class="dossier">
+      <aside class="sheet" aria-labelledby="sheet-title">
+        <h3 id="sheet-title">Le contenu du dossier</h3>
+        <ol class="toc">
+          <li><strong>Votre parcelle</strong><span>Référence, commune, surface cadastrale si fournie et géométrie du terrain.</span></li>
+          <li><strong>Deux époques d’imagerie</strong><span>Vues sur une même emprise, contours cadastraux, périodes et identifiants IGN.</span></li>
+          <li><strong>Le contexte environnemental</strong><span>Résultats publics disponibles, périmètre de recherche et état de chaque source.</span></li>
+          <li><strong>Des observations factuelles</strong><span>Constats documentaires, sans diagnostic automatique de pollution ou de changement.</span></li>
+          <li><strong>Les sources et les limites</strong><span>Date du dossier, références consultées et informations manquantes.</span></li>
+        </ol>
+        <p class="sheet__cap">Structure du rapport généré. Ce sommaire ne constitue pas un exemple de dossier réel.</p>
+      </aside>
 
-<section class="section wrap">
-<div class="intro"><span class="kicker">Questions fréquentes</span><h2>Ce qu'il faut savoir.</h2></div>
-<div class="faq">
-<details><summary>Pourquoi payer si les images IGN sont gratuites ?</summary><p>Vous pouvez consulter gratuitement les images sur le site IGN et utiliser notre démo. Le service prépare un document pour la parcelle que vous avez confirmée : fiche cadastrale, vues sur un même cadrage, recherches environnementales disponibles et références datées. Vous payez ce travail de rassemblement et les exports HTML/PDF, pas un accès exclusif aux données publiques.</p></details>
-<details><summary>Le dossier garantit-il que mon terrain est sans risque ?</summary><p>Non. Le dossier indique ce que les sources consultées permettent de documenter, ainsi que leurs limites et leurs éventuelles indisponibilités. Il ne remplace ni un état des risques réglementaire, ni une étude de sol, ni une expertise environnementale ou juridique.</p></details>
-<details><summary>Est-ce un diagnostic de pollution ou une vérification d'urbanisme ?</summary><p>Non. SiteHistory réunit des informations publiques et facilite un premier examen historique. Une pollution ou la conformité d'une construction ne peuvent pas être conclues à partir de ces seules données.</p></details>
-<details><summary>Les images historiques existent-elles pour toutes les parcelles ?</summary><p>Les dates et couches disponibles varient selon la localisation. Certaines images anciennes correspondent à une période d'acquisition et non à une date précise. Leur géoréférencement et leur résolution peuvent différer des images récentes.</p></details>
-<details><summary>À qui s'adresse cet outil ?</summary><p>Aux curieux, acheteurs, propriétaires et professionnels qui souhaitent gagner du temps pour rassembler des éléments documentaires. Il ne remplace pas les professionnels compétents pour les décisions à risque.</p></details>
-<details><summary>Puis-je déjà acheter un rapport ?</summary><p>Vous pouvez tester tout le parcours et télécharger un dossier après un paiement fictif. Les ventes réelles ne sont pas ouvertes. L’ouverture des commandes sera annoncée quand les formalités de vente et le compte de paiement réel seront prêts.</p></details>
-</div></section>
+      <div>
+        <div class="offers">
+          <article class="offer offer--free">
+            <span class="pill">Disponible maintenant</span>
+            <h3>Explorer, gratuit</h3>
+            <ul>
+              <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Rechercher et confirmer sa parcelle.</li>
+              <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Comparer les photographies IGN disponibles à l’écran.</li>
+              <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Changer de période, zoomer et afficher les contours.</li>
+              <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Ouvrir la source officielle IGN pour poursuivre la consultation.</li>
+            </ul>
+            <a class="btn btn--green" href="./demo.html">Essayer sans compte</a>
+          </article>
 
-<section class="bottom"><div class="wrap bottomgrid"><div><h2>Un terrain peut raconter beaucoup.</h2><p>Commencez par comprendre ce que les données publiques en montrent.</p></div><a class="button bright" href="./demo.html">Lancer la démo réelle ↗</a></div></section>
+          <article class="offer offer--paid">
+            <span class="pill">Dossier en mode test, 4,90 €</span>
+            <h3>Rassembler et conserver</h3>
+            <ul>
+              <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Une fiche cadastrale et une carte de localisation réunies dans le dossier.</li>
+              <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Des vues historique et récente préparées sur la même emprise, avec le terrain surligné.</li>
+              <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Une synthèse des recherches Géorisques intégrées : résultats, nombres et distances lorsqu’ils sont calculables.</li>
+              <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Des références, périodes et dates de consultation pour retrouver les sources.</li>
+              <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Un HTML autonome avec images intégrées et un PDF à télécharger et à partager.</li>
+            </ul>
+            <p class="offer__strong">Paiement unique prévu, sans abonnement ni compte utilisateur. Aucun achat réel n’est ouvert à ce stade.</p>
+          </article>
+        </div>
+
+        <details class="more">
+          <summary>Sources environnementales intégrées</summary>
+          <p>Selon les sources disponibles : CASIAS, SIS, ICPE, cavités, mouvements de terrain, argiles et inondation. Une recherche réussie sans résultat, une source indisponible, une requête en échec et une donnée non intégrée sont distinguées. Une absence de résultat ne prouve jamais une absence de risque.</p>
+        </details>
+
+        <div class="note">
+          <p><strong>Où en est la version de test ?</strong> Le parcours complet est disponible en mode test : confirmez votre parcelle, vérifiez les données, effectuez un paiement fictif, puis téléchargez le HTML et le PDF. Une source essentielle indisponible peut bloquer la préparation. Les commandes réelles ne sont pas ouvertes.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PARCOURS ================= -->
+<section class="section bg-green" id="fonctionnement">
+  <div class="wrap">
+    <div class="intro">
+      <h2>Choisir, vérifier, télécharger.</h2>
+      <p class="lead">Un parcours accessible sans compte, avec paiement et livraison en mode test.</p>
+    </div>
+    <ol class="steps">
+      <li class="step">
+        <span class="step__n">01</span>
+        <h3>Localisez</h3>
+        <p>Indiquez une adresse ou référence cadastrale et vérifiez visuellement le terrain sélectionné.</p>
+      </li>
+      <li class="step">
+        <span class="step__n">02</span>
+        <h3>Vérifiez le contenu</h3>
+        <p>Avant de proposer un paiement test, le serveur vérifie les données essentielles et prépare les exports. En cas de données essentielles indisponibles, la commande reste bloquée.</p>
+      </li>
+      <li class="step">
+        <span class="step__n">03</span>
+        <h3>Téléchargez</h3>
+        <p>Après vérification du paiement côté serveur, récupérez le HTML et le PDF par des liens temporaires. La livraison est disponible en mode test, sans création de compte.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ================= TARIF ================= -->
+<section class="section bg-paper2" id="tarif">
+  <div class="wrap">
+    <div class="tarif">
+      <div>
+        <h2>Un dossier prêt à relire et à partager.</h2>
+        <p class="lead muted">Évitez de reconstituer vos recherches à partir d’onglets et de captures dispersés. Le dossier rassemble les éléments consultés, leur provenance et leurs limites dans deux formats complémentaires.</p>
+        <p class="measure muted">Le HTML conserve les images dans un fichier autonome. Le PDF permet une lecture et une impression paginées. Le document aide à préparer vos questions avant une visite ou un échange avec un professionnel.</p>
+      </div>
+
+      <div class="price">
+        <span class="pill">Pilote en mode test</span>
+        <div class="price__amount">4,90 €<small>/ dossier</small></div>
+        <p class="price__desc">Dossier historique exploratoire d'une parcelle. Prix indicatif pour le lancement, non facturé pour les tests actuels.</p>
+        <ul>
+          <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Parcelle sélectionnée et confirmée par vous</li>
+          <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Vues IGN cadrées et contours cadastraux</li>
+          <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Résultats environnementaux disponibles et sourcés</li>
+          <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>HTML autonome + PDF téléchargeable</li>
+          <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Dates, références et données manquantes explicites</li>
+        </ul>
+        <a class="btn btn--amber" href="./demo.html">Essayer le dossier en mode test</a>
+        <p class="price__note"><strong>Parcours complet en mode test.</strong> Les 4,90 € affichés dans Stripe sont simulés. Aucun débit réel ne peut être effectué. Le tarif commercial prévu reste de 4,90 € par dossier, sans abonnement.</p>
+      </div>
+    </div>
+
+    <p class="disclaimer">SiteHistory n'est ni une étude de pollution des sols, ni une expertise immobilière, ni une vérification juridique de conformité.</p>
+  </div>
+</section>
+
+<!-- ================= FAQ ================= -->
+<section class="section" id="faq">
+  <div class="wrap faq">
+    <div class="faq__head">
+      <h2>Ce qu'il faut savoir.</h2>
+    </div>
+    <div class="faq__list">
+      <details>
+        <summary>Pourquoi payer si les images IGN sont gratuites ?</summary>
+        <p>Vous pouvez consulter gratuitement les images sur le site IGN et utiliser notre démo. Le service prépare un document pour la parcelle que vous avez confirmée : fiche cadastrale, vues sur un même cadrage, recherches environnementales disponibles et références datées. Vous payez ce travail de rassemblement et les exports HTML/PDF, pas un accès exclusif aux données publiques.</p>
+      </details>
+      <details>
+        <summary>Le dossier garantit-il que mon terrain est sans risque ?</summary>
+        <p>Non. Le dossier indique ce que les sources consultées permettent de documenter, ainsi que leurs limites et leurs éventuelles indisponibilités. Il ne remplace ni un état des risques réglementaire, ni une étude de sol, ni une expertise environnementale ou juridique.</p>
+      </details>
+      <details>
+        <summary>Est-ce un diagnostic de pollution ou une vérification d'urbanisme ?</summary>
+        <p>Non. SiteHistory réunit des informations publiques et facilite un premier examen historique. Une pollution ou la conformité d'une construction ne peuvent pas être conclues à partir de ces seules données.</p>
+      </details>
+      <details>
+        <summary>Les images historiques existent-elles pour toutes les parcelles ?</summary>
+        <p>Les dates et couches disponibles varient selon la localisation. Certaines images anciennes correspondent à une période d'acquisition et non à une date précise. Leur géoréférencement et leur résolution peuvent différer des images récentes.</p>
+      </details>
+      <details>
+        <summary>À qui s'adresse cet outil ?</summary>
+        <p>Aux curieux, acheteurs, propriétaires et professionnels qui souhaitent gagner du temps pour rassembler des éléments documentaires. Il ne remplace pas les professionnels compétents pour les décisions à risque.</p>
+      </details>
+      <details>
+        <summary>Puis-je déjà acheter un rapport ?</summary>
+        <p>Vous pouvez tester tout le parcours et télécharger un dossier après un paiement fictif. Les ventes réelles ne sont pas ouvertes. L’ouverture des commandes sera annoncée quand les formalités de vente et le compte de paiement réel seront prêts.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
 </main>
-<footer><div class="wrap foot"><div><strong>◈ SiteHistory France</strong><br>Outil indépendant utilisant des jeux de données publics. Sans affiliation avec l'IGN, le cadastre ou Géorisques. Les visuels de cette page sont des illustrations fictives.</div><div class="footnav"><a href="#fonctionnalites">Le produit</a><a href="./demo.html">Démo réelle</a><a href="#tarif">Offre pilote</a><a href="https://www.georisques.gouv.fr/" target="_blank" rel="noopener noreferrer">Géorisques ↗</a></div></div></footer>
+
+<!-- ================= CTA FINAL ================= -->
+<section class="cta">
+  <div class="wrap cta__grid">
+    <div>
+      <h2>Un terrain peut raconter beaucoup.</h2>
+      <p>Commencez par comprendre ce que les données publiques en montrent.</p>
+      <a class="btn btn--amber" href="./demo.html">Lancer la démo réelle</a>
+    </div>
+    <svg class="cta__art" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+      <g fill="none" stroke="currentColor" stroke-linejoin="round">
+        <polygon points="30,62 118,24 172,92 138,168 48,150" stroke-width="3"/>
+        <polygon points="30,62 118,24 172,92 138,168 48,150" stroke-width="1" opacity=".35" transform="translate(100 100) scale(1.28) translate(-100 -100)"/>
+        <polygon points="30,62 118,24 172,92 138,168 48,150" stroke-width="1" opacity=".18" transform="translate(100 100) scale(1.56) translate(-100 -100)"/>
+      </g>
+      <g fill="currentColor"><circle cx="30" cy="62" r="5"/><circle cx="118" cy="24" r="5"/><circle cx="172" cy="92" r="5"/><circle cx="138" cy="168" r="5"/><circle cx="48" cy="150" r="5"/></g>
+    </svg>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="wrap foot__grid">
+    <div>
+      <a class="brand" href="#accueil"><svg aria-hidden="true"><use href="#i-logo"/></svg>SiteHistory <span>France</span></a>
+      <p>Outil indépendant utilisant des jeux de données publics. Sans affiliation avec l'IGN, le cadastre ou Géorisques. Les visuels de cette page sont des illustrations fictives.</p>
+    </div>
+    <nav aria-label="Pied de page">
+      <a href="#fonctionnalites">Le produit</a>
+      <a href="./demo.html">Démo réelle</a>
+      <a href="#tarif">Offre pilote</a>
+      <a href="https://www.georisques.gouv.fr/" target="_blank" rel="noopener">Géorisques ↗</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var W = 800, H = 640;
+
+  /* deterministic random so both layers share the same geometry */
+  function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+  var rng = mulberry32(7);
+  var leaves = [], groups = [];
+  function split(x,y,w,h,d,g){
+    if(d===3){ g = groups.length; groups.push({x:x,y:y,w:w,h:h}); }
+    if(d>=5){ leaves.push({x:x,y:y,w:w,h:h,g:g}); return; }
+    var vertical = w/h > .8 + rng()*.5;
+    var r = .34 + rng()*.32;
+    if(vertical){ split(x,y,w*r,h,d+1,g); split(x+w*r,y,w*(1-r),h,d+1,g); }
+    else { split(x,y,w,h*r,d+1,g); split(x,y+h*r,w,h*(1-r),d+1,g); }
+  }
+  split(0,0,W,H,0,0);
+
+  var parcel = "305,235 505,215 548,335 468,430 322,412 272,318";
+  var road = "M-10 455 C 180 420, 330 520, 520 470 S 740 380, 820 400";
+
+  function patterns(prefix, color, op){
+    var angles=[0,35,90,125], s='';
+    angles.forEach(function(a,i){
+      s += '<pattern id="'+prefix+i+'" patternUnits="userSpaceOnUse" width="7" height="7" patternTransform="rotate('+a+')">'+
+           '<rect width="7" height="2.2" fill="'+color+'" opacity="'+op+'"/></pattern>';
+    });
+    return s;
+  }
+  function grain(id, seed){
+    return '<filter id="'+id+'" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="'+seed+'" result="n"/><feColorMatrix type="saturate" values="0"/></filter>';
+  }
+  function n(v){return Math.round(v*10)/10}
+
+  /* ---------- archive (black & white, grain, hedgerows) ---------- */
+  function archive(){
+    var r = mulberry32(21), tones=['#9a9d96','#b3b5ae','#85887f','#c4c6bf','#a7aaa2'], s='';
+    s += '<defs>'+patterns('sA','#20231f',.22)+grain('gA',4)+
+         '<clipPath id="pcA"><polygon points="'+parcel+'"/></clipPath>'+
+         '<radialGradient id="vA" cx="50%" cy="50%" r="75%"><stop offset="55%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity=".42"/></radialGradient></defs>';
+    s += '<rect width="'+W+'" height="'+H+'" fill="#a9aca4"/>';
+    leaves.forEach(function(l){
+      var t = tones[Math.floor(r()*tones.length)], a = Math.floor(r()*4);
+      s += '<rect x="'+n(l.x)+'" y="'+n(l.y)+'" width="'+n(l.w)+'" height="'+n(l.h)+'" fill="'+t+'" stroke="#3d403b" stroke-width="1.8" stroke-linejoin="round"/>';
+      s += '<rect x="'+n(l.x)+'" y="'+n(l.y)+'" width="'+n(l.w)+'" height="'+n(l.h)+'" fill="url(#sA'+a+')"/>';
+    });
+    s += '<path d="'+road+'" fill="none" stroke="#d9dbd3" stroke-width="3" stroke-dasharray="14 5"/>';
+    [[560,150,22,14],[590,160,18,12],[548,178,16,12]].forEach(function(b){
+      s += '<rect x="'+b[0]+'" y="'+b[1]+'" width="'+b[2]+'" height="'+b[3]+'" fill="#2f312d" stroke="#f0f0ea" stroke-width=".8"/>';
+    });
+    /* orchard on the parcel */
+    s += '<polygon points="'+parcel+'" fill="#b9bbb3"/><g clip-path="url(#pcA)">';
+    for(var x=262;x<=570;x+=22){ for(var y=200;y<=450;y+=22){
+      s += '<circle cx="'+x+'" cy="'+y+'" r="7.5" fill="#6b6e67" opacity=".35"/><circle cx="'+x+'" cy="'+y+'" r="4.2" fill="#2a2d28" opacity=".8"/>';
+    }}
+    s += '</g>';
+    s += '<rect width="'+W+'" height="'+H+'" filter="url(#gA)" opacity=".5" style="mix-blend-mode:multiply"/>';
+    s += '<rect width="'+W+'" height="'+H+'" fill="url(#vA)"/>';
+    return s;
+  }
+
+  /* ---------- today (colour, merged fields, buildings, solar) ---------- */
+  function recent(){
+    var r = mulberry32(33), tones=['#6f8b4a','#8aa35c','#b9a35a','#7a6a45','#5d7d4f','#a8b46a','#c9b36e'], s='';
+    s += '<defs>'+patterns('sR','#2a3a1a',.16)+grain('gR',9)+
+         '<pattern id="panels" patternUnits="userSpaceOnUse" width="15" height="12"><rect width="15" height="12" fill="#243a56"/><rect width="15" height="12" fill="none" stroke="#6f8fb5" stroke-width=".8"/></pattern></defs>';
+    s += '<rect width="'+W+'" height="'+H+'" fill="#7f9a5c"/>';
+    groups.forEach(function(g,i){
+      var a = Math.floor(r()*4);
+      s += '<rect x="'+n(g.x)+'" y="'+n(g.y)+'" width="'+n(g.w)+'" height="'+n(g.h)+'" fill="'+tones[(i*3+1)%tones.length]+'" stroke="#e9e6d2" stroke-opacity=".65" stroke-width="1.2"/>';
+      s += '<rect x="'+n(g.x)+'" y="'+n(g.y)+'" width="'+n(g.w)+'" height="'+n(g.h)+'" fill="url(#sR'+a+')"/>';
+    });
+    leaves.forEach(function(l){
+      if(r()<.2){ s += '<rect x="'+n(l.x)+'" y="'+n(l.y)+'" width="'+n(l.w)+'" height="'+n(l.h)+'" fill="'+tones[Math.floor(r()*tones.length)]+'" opacity=".55"/>'; }
+    });
+    s += '<rect x="150" y="170" width="150" height="60" fill="url(#panels)" stroke="#d8e2ee" stroke-width="1.5"/>';
+    s += '<ellipse cx="110" cy="520" rx="38" ry="22" fill="#5f8fa0" stroke="#e9efe0" stroke-width="2"/>';
+    s += '<path d="'+road+'" fill="none" stroke="#cfccc2" stroke-width="9"/><path d="'+road+'" fill="none" stroke="#f3f1e6" stroke-width="1.5" stroke-dasharray="10 8"/>';
+    var roofs=['#b4543c','#8f5a46','#a64f3a','#6b6e72'];
+    [[560,150,22,14],[590,160,18,12],[548,178,16,12],[600,140,30,18],[520,160,20,14],[630,170,24,14],[580,185,20,14],[610,200,26,16]].forEach(function(b,i){
+      s += '<rect x="'+(b[0]+2)+'" y="'+(b[1]+3)+'" width="'+b[2]+'" height="'+b[3]+'" fill="#000" opacity=".25"/>';
+      s += '<rect x="'+b[0]+'" y="'+b[1]+'" width="'+b[2]+'" height="'+b[3]+'" fill="'+roofs[i%roofs.length]+'"/>';
+    });
+    /* the parcel today: lawn, house, terrace, pool */
+    s += '<polygon points="'+parcel+'" fill="#86a85e"/>';
+    s += '<rect x="372" y="285" width="78" height="52" fill="#000" opacity=".22" transform="translate(4 5)"/>';
+    s += '<rect x="372" y="285" width="78" height="52" fill="#b4543c"/><line x1="372" y1="311" x2="450" y2="311" stroke="#8f3f2b" stroke-width="2"/>';
+    s += '<rect x="372" y="337" width="78" height="14" fill="#d8cdb5"/>';
+    s += '<rect x="392" y="360" width="36" height="20" rx="3" fill="#58b0c6" stroke="#e9f3f5" stroke-width="2"/>';
+    [[330,370],[500,300],[340,270]].forEach(function(t){
+      s += '<circle cx="'+t[0]+'" cy="'+t[1]+'" r="12" fill="#3f6a3a" opacity=".85"/><circle cx="'+(t[0]-2)+'" cy="'+(t[1]-2)+'" r="7" fill="#5b8a49" opacity=".8"/>';
+    });
+    s += '<rect width="'+W+'" height="'+H+'" filter="url(#gR)" opacity=".12" style="mix-blend-mode:multiply"/>';
+    return s;
+  }
+
+  /* ---------- parcel outline (shared overlay) ---------- */
+  function outline(){
+    var s = '<polygon points="'+parcel+'" fill="#f3b73a" fill-opacity=".14" stroke="#f3b73a" stroke-width="4" stroke-linejoin="round"/>';
+    parcel.split(' ').forEach(function(p){
+      var c = p.split(',');
+      s += '<circle cx="'+c[0]+'" cy="'+c[1]+'" r="6" fill="#f3b73a" stroke="#fff" stroke-width="2"/>';
+    });
+    s += '<g font-family="Bricolage Grotesque, Arial, sans-serif" font-weight="700" font-size="17"><rect x="288" y="184" width="98" height="26" rx="3" fill="#f3b73a"/><text x="299" y="202" fill="#1c2a14">Parcelle</text></g>';
+    return s;
+  }
+
+  document.getElementById('svg-archive').innerHTML = archive();
+  document.getElementById('svg-recent').innerHTML = recent();
+  document.getElementById('svg-parcel').innerHTML = outline();
+
+  /* ---------- comparator ---------- */
+  var cmp = document.getElementById('comparator');
+  var input = cmp.querySelector('input');
+  var stopped = false;
+  function setPos(v){
+    cmp.style.setProperty('--pos', v + '%');
+    input.setAttribute('aria-valuetext', Math.round(v) + ' % archives, ' + (100 - Math.round(v)) + ' % aujourd\'hui');
+  }
+  input.addEventListener('input', function(){ stopped = true; setPos(parseFloat(input.value)); });
+  ['pointerdown','keydown','touchstart'].forEach(function(ev){ input.addEventListener(ev, function(){ stopped = true; }, {passive:true}); });
+  setPos(50);
+
+  /* one single entrance moment: the slider sweeps once, then rests */
+  if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    var keys = [50, 22, 78, 50], total = 3600, t0 = null;
+    function ease(t){ return .5 - Math.cos(Math.PI*t)/2; }
+    function frame(ts){
+      if(stopped) return;
+      if(t0 === null) t0 = ts;
+      var p = Math.min((ts - t0)/total, 1);
+      var seg = Math.min(Math.floor(p*3), 2), local = p*3 - seg;
+      var v = keys[seg] + (keys[seg+1]-keys[seg]) * ease(local);
+      input.value = v; setPos(v);
+      if(p < 1) requestAnimationFrame(frame);
+    }
+    setTimeout(function(){ if(!stopped) requestAnimationFrame(frame); }, 900);
+  }
+})();
+</script>
 </body>
 </html>
