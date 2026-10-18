@@ -3,7 +3,7 @@
 'use strict';
 const $=id=>document.getElementById(id), api=(window.SITEHISTORY_API||'').replace(/\/$/,'');
 const WMTS='https://data.geopf.fr/wmts', CARTO='https://apicarto.ign.fr/api/cadastre/parcelle';
-let layers=[], candidates=[], selected=null, confirmed=false, generation=0, selectionGeneration=0, prepared=null, preparing=false, preparationVersion=0, requestedAddress='';
+let layers=[], candidates=[], selected=null, confirmed=false, generation=0, selectionGeneration=0, prepared=null, preparing=false, checkoutPending=false, preparationVersion=0, requestedAddress='';
 let epoch=0, rendering=0, maps=[], raster=[null,null], outlines=[null,null], validPair=false, debounce;
 const status=(t,failed=false)=>{$('status').textContent=t;$('status').classList.toggle('failed',failed)};
 const json=async url=>{const r=await fetch(url,{signal:AbortSignal.timeout(30000)});if(!r.ok)throw Error('Service indisponible (HTTP '+r.status+')');return r.json()};
@@ -16,10 +16,11 @@ const post=async(path,body)=>{
  try{r=await fetch(api+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(240000)})}
  catch(error){throw Error(error.name==='TimeoutError'||error.name==='AbortError'?'Le délai de réponse du serveur est dépassé. Réessayez plus tard.':'Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.')}
  let d;try{d=await r.json()}catch{throw Error('Le serveur est temporairement indisponible (HTTP '+r.status+'). Réessayez plus tard.')}
- if(!r.ok)throw Error(typeof d?.detail==='string'?d.detail:'Opération indisponible (HTTP '+r.status+').');return d;
+ if(!r.ok){const error=Error(typeof d?.detail==='string'?d.detail:'Opération indisponible (HTTP '+r.status+').');error.status=r.status;throw error}return d;
 };
 function updatePrepare(){$('prepare').disabled=preparing||!!prepared||!(api&&confirmed&&validPair)}
-function invalidate(){preparationVersion++;confirmed=false;prepared=null;$('confirm').disabled=!selected;updatePrepare();$('checkout').disabled=true;$('report-status').dataset.state='idle';$('report-status').textContent='Confirmez une parcelle avant de préparer un dossier.'}
+function resetCheckout(){$('checkout-status').textContent='';$('checkout-status').dataset.state='idle';$('checkout-link').hidden=true;$('checkout-link').removeAttribute('href')}
+function invalidate(){preparationVersion++;confirmed=false;prepared=null;resetCheckout();$('confirm').disabled=!selected;updatePrepare();$('checkout').disabled=true;$('report-status').dataset.state='idle';$('report-status').textContent='Confirmez une parcelle avant de préparer un dossier.'}
 function matrixXML(root,tag){return [...root.getElementsByTagNameNS('*',tag)]}
 function text(root,tag){return matrixXML(root,tag)[0]?.textContent?.trim()||''}
 async function catalogue(){
@@ -124,14 +125,14 @@ async function point(lng,lat){const t=++selectionGeneration;setCandidates([]);st
  if(t!==selectionGeneration)return;setCandidates(fs.slice(0,30));status(fs.length?'Candidats affichés. Aucune correspondance avec l’adresse n’est certaine.':'Aucune parcelle trouvée. Cliquez sur le terrain ou saisissez sa référence.');}catch(e){if(t===selectionGeneration)status(e.message,true)}}
 async function search(e){e?.preventDefault();const reference=normaliseReference($('address').value);if(referencePattern.test(reference)){$('identifier').value=reference;$('identifier-form').requestSubmit();return}const t=++generation;selectionGeneration++;setCandidates([]);$('search').disabled=true;status('Recherche d’adresse…');$('address-choices').replaceChildren();try{const fs=(await json('https://data.geopf.fr/geocodage/search?'+new URLSearchParams({q:$('address').value,index:'address',limit:5}))).features||[];if(t!==generation)return;if(!fs.length)throw Error('Adresse introuvable');for(const f of fs){const b=node('button',f.properties.label);b.onclick=()=>useAddress(f);$('address-choices').append(b)}await useAddress(fs[0]);}catch(e){if(t===generation)status(e.message,true)}finally{if(t===generation)$('search').disabled=false}}
 async function useAddress(f){const [lon,lat]=f.geometry.coordinates;requestedAddress=$('address').value.trim();$('found-address').textContent=f.properties.label;maps[0].setView([lat,lon],17);maps[1].setView([lat,lon],17);periods();await point(lon,lat)}
-$('search-form').onsubmit=search;$('candidates').onchange=()=>choose($('candidates').value);$('era').onchange=()=>{preparationVersion++;prepared=null;$('checkout').disabled=true;imagery()};$('outlines').onchange=draw;
+$('search-form').onsubmit=search;$('candidates').onchange=()=>choose($('candidates').value);$('era').onchange=()=>{preparationVersion++;prepared=null;resetCheckout();$('checkout').disabled=true;imagery()};$('outlines').onchange=draw;
 $('identifier-form').onsubmit=async e=>{e.preventDefault();const t=++selectionGeneration;generation++;requestedAddress='';$('found-address').textContent='';const id=normaliseReference($('identifier').value);setCandidates([]);if(!referencePattern.test(id)){status('Identifiant cadastral invalide (14 caractères requis).',true);return}status('Recherche de la référence cadastrale…');try{const fs=(await json(CARTO+'?'+new URLSearchParams({code_insee:id.slice(0,5),section:id.slice(8,10),numero:id.slice(10)}))).features||[];if(t!==selectionGeneration)return;setCandidates(fs.filter(f=>idOf(f)===id));if(selected){$('fit').click();periods()}status(selected?'Référence exacte retrouvée. Vérifiez et confirmez le contour.':'Aucune parcelle avec cette référence exacte.',!selected)}catch(e){if(t===selectionGeneration)status(e.message,true)}};
 $('fit').onclick=()=>{if(selected){const b=L.geoJSON(selected).getBounds().pad(1);maps.forEach(m=>m.fitBounds(b,{maxZoom:18}))}};
 $('confirm').onclick=()=>{if(!selected)return;confirmed=true;$('confirm').disabled=true;$('parcel').textContent=$('parcel').textContent.replace('Sélection candidate — à confirmer','Parcelle confirmée par vous');updatePrepare();$('report-status').textContent=api?'Parcelle confirmée. Vérifiez les données avant tout paiement test.':'Parcelle confirmée. Serveur de rapports non connecté : export et paiement indisponibles.'};
 $('prepare').onclick=async()=>{
  const parcel=idOf(selected||{}),old=$('era').value,version=preparationVersion;
  if(!confirmed||!validPair||preparing||prepared)return;
- prepared=null;preparing=true;updatePrepare();$('checkout').disabled=true;
+ prepared=null;preparing=true;resetCheckout();updatePrepare();$('checkout').disabled=true;
  $('prepare').textContent='Préparation en cours…';$('prepare').setAttribute('aria-busy','true');
  $('report-status').dataset.state='preparing';$('report-status').textContent='Préparation en cours : vérification des sources et création du HTML et du PDF. Le serveur gratuit peut prendre plusieurs minutes. Gardez cet onglet ouvert ; aucun paiement n’est demandé.';
  const started=Date.now();$('report-elapsed').hidden=false;
@@ -166,7 +167,28 @@ function rememberedOrder(){
  }catch{}
  return null;
 }
-$('checkout').onclick=async()=>{if(!prepared)return;$('checkout').disabled=true;try{const d=await post('/api/checkout',{preview_token:prepared.preview_token});rememberOrder({id:d.order_id,token:d.order_token});location.assign(d.url)}catch(e){status(e.message,true);$('checkout').disabled=false}};
+$('checkout').onclick=async()=>{
+ if(!prepared||checkoutPending)return;
+ const preview=prepared,version=preparationVersion;
+ checkoutPending=true;resetCheckout();$('checkout').disabled=true;$('checkout').setAttribute('aria-busy','true');$('checkout').textContent='Ouverture du paiement TEST…';
+ $('checkout-status').dataset.state='opening';$('checkout-status').textContent='Connexion à Stripe TEST en cours. Gardez cet onglet ouvert ; aucun débit réel.';$('checkout-status').scrollIntoView({block:'nearest'});
+ try{
+  const d=await post('/api/checkout',{preview_token:preview.preview_token});
+  // A response for a previous selection must never open payment for that parcel.
+  if(version!==preparationVersion||prepared!==preview){$('checkout-status').dataset.state='failed';$('checkout-status').textContent='La sélection a changé. Préparez le dossier de la parcelle souhaitée avant paiement.';return}
+  let url;try{url=new URL(d?.url)}catch{}
+  if(typeof d?.order_id!=='string'||d.order_id.length<16||typeof d.order_token!=='string'||d.order_token.length<32||!url||url.protocol!=='https:'||url.hostname!=='checkout.stripe.com'||url.username||url.password||!url.pathname.split('/').some(p=>p.startsWith('cs_test_')))throw Error('Réponse de paiement TEST incomplète ou invalide. Aucun paiement ouvert. Réessayez cette même commande.');
+  rememberOrder({id:d.order_id,token:d.order_token});
+  $('checkout-link').href=url.href;$('checkout-link').hidden=false;
+  $('checkout-status').dataset.state='ready';$('checkout-status').textContent='Le paiement TEST est prêt. Si la redirection ne se produit pas, cliquez sur « Ouvrir le paiement TEST » ci-dessous. Ce lien reprend la même commande.';
+  location.assign(url.href);
+ }catch(error){
+  if(error.status===410&&prepared===preview){prepared=null;updatePrepare();$('prepare').textContent='1. Préparer de nouveau le dossier';$('report-status').dataset.state='failed';$('report-status').textContent='La préparation ou la session de paiement a expiré. Préparez de nouveau le dossier avant paiement.'}
+  $('checkout-status').dataset.state='failed';$('checkout-status').textContent=error.message;status(error.message,true);
+ }finally{
+  checkoutPending=false;$('checkout').removeAttribute('aria-busy');$('checkout').textContent='2. Continuer vers le paiement TEST — 4,90 €';$('checkout').disabled=!prepared?.payments_enabled;$('checkout-status').scrollIntoView({block:'nearest'});
+ }
+};
 function deliveryError(message){$('order-panel').hidden=false;$('order-status').textContent=message;$('delivery').replaceChildren()}
 async function orderData(o){
  const r=await fetch(api+'/api/orders/'+encodeURIComponent(o.id),{headers:{Authorization:'Bearer '+o.token},signal:AbortSignal.timeout(45000)});

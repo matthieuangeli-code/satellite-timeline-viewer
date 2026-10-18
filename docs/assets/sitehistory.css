@@ -2,3 +2,5 @@
 .official-help{padding:16px;border-left:4px solid #1b5946;background:#e6efdf}.official-help a{font-weight:750}
 
 #report-status[data-state="preparing"]{background:#eef4df;border-left:4px solid #527225;padding:12px}#report-status[data-state="failed"]{background:#ffeadf;border-left:4px solid #a93b19;padding:12px}#report-status[data-state="ready"]{background:#e5f4e8;border-left:4px solid #1b5946;padding:12px}#report-elapsed{font-variant-numeric:tabular-nums}button[aria-busy="true"]{opacity:.8}
+
+#checkout-status:empty{display:none}#checkout-status[data-state="opening"],#checkout-status[data-state="ready"]{background:#e5f4e8;border-left:4px solid #1b5946;padding:12px}#checkout-status[data-state="failed"]{background:#ffeadf;border-left:4px solid #a93b19;padding:12px}#checkout-link:not([hidden]){display:inline-block;padding:12px;background:#1b5946;color:white;border-radius:6px}
