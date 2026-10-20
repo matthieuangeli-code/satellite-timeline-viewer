@@ -7,7 +7,7 @@ on:
         type: boolean
         default: false
       parcel_id:
-        description: Cadastral reference for the navigation-only check
+        description: Confirmed cadastral reference for the navigation or full sandbox check
         default: '276440000B0151'
 permissions:
   contents: read
