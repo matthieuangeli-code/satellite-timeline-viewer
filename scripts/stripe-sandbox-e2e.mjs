@@ -129,8 +129,11 @@ try {
  stage='downloads';const signed=state.data.downloads;for(const path of Object.values(signed))protect(path);
  const files=await browserDownloads();assert.ok(files.pdf.subarray(0,5).toString()==='%PDF-');
  const html=files.html.toString();assert.ok(html.includes('276440000B0150'));assert.ok((html.match(/data:image\/jpeg;base64,/g)||[]).length>=2);
+ assert.ok(html.includes('Votre parcelle en bref')&&html.includes('id="environs"')&&html.includes('Fiches des enregistrements retournés'),'Enriched report sections missing from the actual paid download');
  const text=spawnSync('pdftotext',['-','-'],{input:files.pdf,maxBuffer:3000000});assert.equal(text.status,0,'PDF could not be read');assert.ok(text.stdout.toString().includes('276440000B0150'));
  assert.ok(text.stdout.toString().includes('Indicateurs environnementaux'));
+ assert.ok(text.stdout.toString().includes('Votre parcelle en bref')&&text.stdout.toString().includes('Fiches des enregistrements'),'PDF does not contain the enriched report');
+ result.reportFeatures={summary:true,neighbourhoodMap:true,detailedRecords:true,verifiedImageryCount:(html.match(/data:image\/jpeg;base64,/g)||[]).length};note('enriched_html_and_pdf_contents_verified');
  assert.equal((await context.request.get(api+signed.pdf.replace('signature=','signature=x'))).status(),403);
  const expired=new URL(api+signed.pdf);expired.searchParams.set('expires','0');assert.equal((await context.request.get(expired.toString())).status(),403);
  result.files={htmlBytes:files.html.length,pdfBytes:files.pdf.length,htmlSha256:hash(files.html),pdfSha256:hash(files.pdf)};note('standalone_html_and_readable_pdf_downloaded');note('invalid_and_expired_signed_urls_rejected');
