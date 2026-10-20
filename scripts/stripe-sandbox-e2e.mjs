@@ -153,9 +153,14 @@ try {
  await reportPage.locator('.history-thumb').first().click();
  assert.ok((await reportPage.evaluate(()=>location.hash)).startsWith('#photo-'));
  if(markerCount){const marker=reportPage.locator('.map-marker').first();const target=await marker.getAttribute('href');await marker.click();assert.equal(await reportPage.evaluate(()=>location.hash),target);}
+ const planningRecords=await reportPage.locator('#urbanisme .planning-record').count();
+ assert.ok(planningRecords>0,'No actual planning records in the delivered Tilly report');
+ assert.ok((await reportPage.locator('#erp').innerText()).includes('ERP réglementaire non délivré'));
+ assert.ok((await reportPage.locator('#urbanisme').innerText()).includes('ne sont pas annexées intégralement'));
  await reportPage.close();
  assert.ok(text.stdout.toString().includes('Votre terrain à travers les archives aériennes'));
- result.reportFeatures={summary:true,neighbourhoodMap:true,currentIGNBackground:true,detailedRecords:true,historicalIntroCount:historicalCount,verifiedImageryCount:(html.match(/data-evidence-id=/g)||[]).length,clickableMarkers:markerCount?true:'not_applicable_no_geolocated_records',geolocatedMarkers:markerCount};note('enriched_html_and_pdf_contents_verified');
+ assert.ok(text.stdout.toString().includes('Documents d’urbanisme et servitudes')&&text.stdout.toString().includes('ERP réglementaire non délivré'));
+ result.reportFeatures={planningRecords,planningDocuments:true,officialERPDelivered:false,summary:true,neighbourhoodMap:true,currentIGNBackground:true,detailedRecords:true,historicalIntroCount:historicalCount,verifiedImageryCount:(html.match(/data-evidence-id=/g)||[]).length,clickableMarkers:markerCount?true:'not_applicable_no_geolocated_records',geolocatedMarkers:markerCount};note('enriched_html_and_pdf_contents_verified');
  assert.equal((await context.request.get(api+signed.pdf.replace('signature=','signature=x'))).status(),403);
  const expired=new URL(api+signed.pdf);expired.searchParams.set('expires','0');assert.equal((await context.request.get(expired.toString())).status(),403);
  result.files={htmlBytes:files.html.length,pdfBytes:files.pdf.length,htmlSha256:hash(files.html),pdfSha256:hash(files.pdf)};note('standalone_html_and_readable_pdf_downloaded');note('invalid_and_expired_signed_urls_rejected');
