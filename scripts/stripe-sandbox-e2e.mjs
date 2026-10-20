@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process';
 const api='https://sitehistory-api-pilot.onrender.com',front='https://matthieuangeli-code.github.io/satellite-timeline-viewer';
 const out='test-results/stripe-sandbox';await mkdir(out,{recursive:true});
 const result={mode:'sandbox',state:'running',checks:[],startedAt:new Date().toISOString()};
+const parcelId=process.env.SITEHISTORY_PARCEL_ID||'276440000B0151';assert.match(parcelId,/^\d{5}[A-Z0-9]{9}$/);
 const testEmail='sitehistory-sandbox-'+Date.now()+'@example.com';
 const protectedValues=new Set();let stage='health',page,browser,context,order,preview,checkId;
 const protect=v=>{if(v)protectedValues.add(v);return v};
@@ -92,7 +93,9 @@ try {
  });
  await page.goto(front+'/demo.html',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>document.querySelector('#comparison-state').dataset.oldHash&&document.querySelector('#candidates').options.length>1,null,{timeout:180000});
- await page.locator('#candidates').selectOption('276440000B0150');await page.locator('#confirm').click();
+ await page.locator('#identifier').fill(parcelId);await page.locator('#identifier-form button').click();
+ await page.waitForFunction(id=>document.querySelector('#candidates').value===id&&document.querySelector('#comparison-state').dataset.oldHash,parcelId,{timeout:180000});
+ await page.locator('#confirm').click();
  stage='report_preparation';await page.locator('#prepare').click();
  await page.waitForFunction(()=>document.querySelector('#report-status').textContent.includes('Dossier HTML/PDF prêt')||document.querySelector('#status').classList.contains('failed'),null,{timeout:300000});
  assert.ok(preview?.preview_token,'Real report preparation failed');assert.equal(preview.payments_enabled,true);note('confirmed_parcel_and_real_report');
@@ -121,19 +124,38 @@ try {
   state=await request('/api/orders/'+order.order_id,{token:order.order_token});
   if(state.data.status==='ready')break;await pause(3000);
  }
- assert.equal(state.data.status,'ready','Signed webhook did not unlock delivery');assert.equal(state.data.parcel_id,'276440000B0150');
+ assert.equal(state.data.status,'ready','Signed webhook did not unlock delivery');assert.equal(state.data.parcel_id,parcelId);
  await page.locator('#delivery a').first().waitFor({state:'visible',timeout:30000});
  // Wait for maps/search as well: delivery must survive their initial invalidation.
  await page.waitForFunction(()=>document.querySelector('#candidates').options.length>1,null,{timeout:120000});
  assert.equal(await page.locator('#delivery a').count(),2);note('real_test_payment_and_signed_webhook_delivery');
  stage='downloads';const signed=state.data.downloads;for(const path of Object.values(signed))protect(path);
  const files=await browserDownloads();assert.ok(files.pdf.subarray(0,5).toString()==='%PDF-');
- const html=files.html.toString();assert.ok(html.includes('276440000B0150'));assert.ok((html.match(/data:image\/jpeg;base64,/g)||[]).length>=2);
+ const html=files.html.toString();assert.ok(html.includes(parcelId));assert.ok((html.match(/data-evidence-id=/g)||[]).length>=2);
  assert.ok(html.includes('Votre parcelle en bref')&&html.includes('id="environs"')&&html.includes('Fiches des enregistrements retournés'),'Enriched report sections missing from the actual paid download');
- const text=spawnSync('pdftotext',['-','-'],{input:files.pdf,maxBuffer:3000000});assert.equal(text.status,0,'PDF could not be read');assert.ok(text.stdout.toString().includes('276440000B0150'));
+ const text=spawnSync('pdftotext',['-','-'],{input:files.pdf,maxBuffer:3000000});assert.equal(text.status,0,'PDF could not be read');assert.ok(text.stdout.toString().includes(parcelId));
  assert.ok(text.stdout.toString().includes('Indicateurs environnementaux'));
  assert.ok(text.stdout.toString().includes('Votre parcelle en bref')&&text.stdout.toString().includes('Fiches des enregistrements'),'PDF does not contain the enriched report');
- result.reportFeatures={summary:true,neighbourhoodMap:true,detailedRecords:true,verifiedImageryCount:(html.match(/data:image\/jpeg;base64,/g)||[]).length};note('enriched_html_and_pdf_contents_verified');
+ const reportPage=await context.newPage();
+ await reportPage.route('**/*',route=>route.abort());await reportPage.setContent(html,{waitUntil:'load'});
+ const historicalCount=await reportPage.locator('.history-thumb').count();
+ assert.ok(historicalCount>=1&&historicalCount<=5);
+ assert.equal(await reportPage.locator('figure[data-historical="true"]').count(),historicalCount);
+ assert.equal(await reportPage.locator('#intro-historique').getAttribute('data-historical-count'),String(historicalCount));
+ assert.equal(await reportPage.locator('[data-map-background="ign-current"]').count(),1,'Actual IGN current context background missing');
+ const markerCount=await reportPage.locator('.map-marker').count();
+ if(markerCount){
+  const marker=reportPage.locator('.map-marker').first();const target=await marker.getAttribute('href');await marker.click();
+  assert.equal(await reportPage.evaluate(()=>location.hash),target);assert.ok((await reportPage.locator(target).boundingBox()).y>=-1);
+ }
+ await reportPage.setViewportSize({width:390,height:844});
+ assert.ok(await reportPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ await reportPage.locator('.history-thumb').first().click();
+ assert.ok((await reportPage.evaluate(()=>location.hash)).startsWith('#photo-'));
+ if(markerCount){const marker=reportPage.locator('.map-marker').first();const target=await marker.getAttribute('href');await marker.click();assert.equal(await reportPage.evaluate(()=>location.hash),target);}
+ await reportPage.close();
+ assert.ok(text.stdout.toString().includes('Votre terrain à travers les archives aériennes'));
+ result.reportFeatures={summary:true,neighbourhoodMap:true,currentIGNBackground:true,detailedRecords:true,historicalIntroCount:historicalCount,verifiedImageryCount:(html.match(/data-evidence-id=/g)||[]).length,clickableMarkers:markerCount?true:'not_applicable_no_geolocated_records',geolocatedMarkers:markerCount};note('enriched_html_and_pdf_contents_verified');
  assert.equal((await context.request.get(api+signed.pdf.replace('signature=','signature=x'))).status(),403);
  const expired=new URL(api+signed.pdf);expired.searchParams.set('expires','0');assert.equal((await context.request.get(expired.toString())).status(),403);
  result.files={htmlBytes:files.html.length,pdfBytes:files.pdf.length,htmlSha256:hash(files.html),pdfSha256:hash(files.pdf)};note('standalone_html_and_readable_pdf_downloaded');note('invalid_and_expired_signed_urls_rejected');
