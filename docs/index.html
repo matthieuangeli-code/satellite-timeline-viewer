@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SiteHistory France — Chaque parcelle a une histoire</title>
-<meta name="description" content="Préparez vos questions avant un achat ou un projet : synthèse, jusqu’à cinq photographies historiques IGN vérifiées, carte aérienne des signalements et fiches sourcées en HTML et PDF. Tarif commercial envisagé : 9,90 €. Parcours actuellement en test uniquement.">
+<meta name="description" content="Préparez vos questions avant un achat ou un projet : synthèse, jusqu’à cinq photographies historiques IGN vérifiées, carte aérienne des signalements, zonages et documents d’urbanisme référencés en HTML et PDF. Tarif commercial envisagé : 9,90 €. Parcours actuellement en test uniquement.">
 <meta property="og:title" content="SiteHistory France — Chaque parcelle a une histoire">
 <meta property="og:description" content="Explorez les archives aériennes et les informations publiques sur votre terrain.">
 <meta name="theme-color" content="#173e35">
@@ -370,6 +370,7 @@ details.more p{margin:0 0 16px;color:var(--ink-2);font-size:.97rem}
           <li><strong>Votre parcelle confirmée</strong><span>Référence, commune, surface cadastrale si fournie et géométrie du terrain.</span></li>
           <li><strong>Une chronologie illustrée</strong><span>Jusqu’à cinq archives historiques et une vue récente, selon les captures réellement disponibles. Même emprise, terrain surligné et références IGN.</span></li>
           <li><strong>Une carte et des fiches numérotées</strong><span>Fond aérien récent IGN si disponible, repères cliquables vers les fiches, distances au contour et informations publiées. Les données communales sont identifiées séparément.</span></li>
+          <li><strong>Les documents d’urbanisme repérés</strong><span>PLU ou carte communale, zonages et servitudes intersectant la parcelle, dates publiées et liens vers les pièces originales lorsque fournis.</span></li>
           <li><strong>Des observations factuelles</strong><span>Constats documentaires, sans diagnostic automatique de pollution ou de changement.</span></li>
           <li><strong>Les sources et les limites</strong><span>Date du dossier, références consultées et informations manquantes.</span></li>
         </ol>
@@ -398,6 +399,7 @@ details.more p{margin:0 0 16px;color:var(--ink-2);font-size:.97rem}
               <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>La fiche cadastrale, jusqu’à cinq photographies historiques en introduction et une vue récente, sur la même emprise lorsque disponibles.</li>
               <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Une carte sur fond aérien récent IGN si sa capture est disponible, avec des repères cliquables vers les fiches et le périmètre de recherche.</li>
               <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Des fiches détaillées : référence, adresse, statut et dates lorsque publiés, portée géographique et lien officiel si fourni.</li>
+              <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Urbanisme : documents publiés, zonages, prescriptions et servitudes qui intersectent la parcelle. Les pièces originales sont liées lorsqu’elles sont disponibles.</li>
               <li><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>Un HTML autonome avec images intégrées et un PDF à télécharger et à partager.</li>
             </ul>
             <p class="offer__strong">Un document pour préparer vos questions, comparer vos recherches et les partager. Sans abonnement ni compte. Ventes réelles fermées ; le paiement fictif de test reste à 4,90 €.</p>
@@ -490,8 +492,12 @@ details.more p{margin:0 0 16px;color:var(--ink-2);font-size:.97rem}
         <p>Non. Le dossier indique ce que les sources consultées permettent de documenter, ainsi que leurs limites et leurs éventuelles indisponibilités. Il ne remplace ni un état des risques réglementaire, ni une étude de sol, ni une expertise environnementale ou juridique.</p>
       </details>
       <details>
-        <summary>Les PPR, arrêtés CatNat et documents d’urbanisme sont-ils inclus ?</summary>
-        <p>Non, ces documents ne sont pas intégrés à cette version. Le rapport rappelle ces vérifications à poursuivre auprès des sources compétentes. Il distingue les informations communales des enregistrements géolocalisés.</p>
+        <summary>Quels documents d’urbanisme sont inclus ?</summary>
+        <p>Le dossier recherche les documents publiés sur le Géoportail de l’urbanisme, les zonages, prescriptions et servitudes intersectant votre parcelle. Il conserve les références, dates publiées et liens vers les pièces originales lorsqu’ils sont fournis. Ces pièces restent à consulter en ligne ; elles ne sont pas annexées intégralement au PDF. Une recherche sans résultat ne prouve pas l’absence de règle applicable. L’actualité et l’opposabilité doivent être confirmées auprès de la mairie.</p>
+      </details>
+      <details>
+        <summary>L’ERP réglementaire est-il fourni ?</summary>
+        <p>Non. Le rapport indique la démarche officielle ERRIAL pour établir et compléter cet état des risques. La délivrance automatique d’un ERP conforme, ses déclarations vendeur et ses annexes ne sont pas intégrées. Les arrêtés CatNat et l’analyse réglementaire complète des PPR restent à vérifier. Les signalements du rapport ne remplacent pas cet ERP.</p>
       </details>
       <details>
         <summary>Est-ce un diagnostic de pollution ou une vérification d'urbanisme ?</summary>
