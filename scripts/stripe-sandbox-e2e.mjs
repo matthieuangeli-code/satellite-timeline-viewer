@@ -157,10 +157,17 @@ try {
  assert.ok(planningRecords>0,'No actual planning records in the delivered Tilly report');
  assert.ok((await reportPage.locator('#erp').innerText()).includes('ERP réglementaire non délivré'));
  assert.ok((await reportPage.locator('#urbanisme').innerText()).includes('ne sont pas annexées intégralement'));
+ assert.equal(await reportPage.locator('#precision').getAttribute('data-measurement-state'),'ok');
+ const measuredPlanningRecords=await reportPage.locator('.planning-record [data-spatial-state="ok"]').count();
+ assert.ok(measuredPlanningRecords>0,'No measurable geometry in actual planning results');
+ assert.ok(await reportPage.locator('#zonage-carte path[data-zone-index]').count()>0,'Actual zone intersection map missing');
+ await reportPage.locator('#zonage-carte nav a').first().click();
+ assert.ok((await reportPage.evaluate(()=>location.hash)).startsWith('#gpu-zone-urba-'));
  await reportPage.close();
  assert.ok(text.stdout.toString().includes('Votre terrain à travers les archives aériennes'));
  assert.ok(text.stdout.toString().includes('Documents d’urbanisme et servitudes')&&text.stdout.toString().includes('ERP réglementaire non délivré'));
- result.reportFeatures={planningRecords,planningDocuments:true,officialERPDelivered:false,summary:true,neighbourhoodMap:true,currentIGNBackground:true,detailedRecords:true,historicalIntroCount:historicalCount,verifiedImageryCount:(html.match(/data-evidence-id=/g)||[]).length,clickableMarkers:markerCount?true:'not_applicable_no_geolocated_records',geolocatedMarkers:markerCount};note('enriched_html_and_pdf_contents_verified');
+ assert.ok(text.stdout.toString().includes('Mesures, méthode et couverture'));
+ result.reportFeatures={planningRecords,measuredPlanningRecords,measurementMethod:true,clickableZoningMap:true,planningDocuments:true,officialERPDelivered:false,summary:true,neighbourhoodMap:true,currentIGNBackground:true,detailedRecords:true,historicalIntroCount:historicalCount,verifiedImageryCount:(html.match(/data-evidence-id=/g)||[]).length,clickableMarkers:markerCount?true:'not_applicable_no_geolocated_records',geolocatedMarkers:markerCount};note('enriched_html_and_pdf_contents_verified');
  assert.equal((await context.request.get(api+signed.pdf.replace('signature=','signature=x'))).status(),403);
  const expired=new URL(api+signed.pdf);expired.searchParams.set('expires','0');assert.equal((await context.request.get(expired.toString())).status(),403);
  result.files={htmlBytes:files.html.length,pdfBytes:files.pdf.length,htmlSha256:hash(files.html),pdfSha256:hash(files.pdf)};note('standalone_html_and_readable_pdf_downloaded');note('invalid_and_expired_signed_urls_rejected');
