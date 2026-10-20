@@ -20,7 +20,7 @@ try {
    if(await page.locator('a[href*="buy.stripe.com"]').count())throw Error('Standalone payment bypasses parcel confirmation');
    if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth))throw Error('Homepage overflows viewport');
    await page.screenshot({path:`${output}/homepage-${mobile?'mobile':'desktop'}.png`,fullPage:true});
-   await page.locator('.offer a').click();
+   await page.locator('.offer--free a').click();
    await page.locator('#official').waitFor({state:'visible'});
    if(!String(await page.locator('#official').getAttribute('href')).startsWith('https://remonterletemps.ign.fr/'))throw Error('Official IGN link missing');
    console.log(JSON.stringify({name:`homepage-${mobile?'mobile':'desktop'}`,passed:true}));
