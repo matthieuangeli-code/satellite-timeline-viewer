@@ -1,0 +1,59 @@
+{
+  "place": "Tilly (Eure)",
+  "attribution": "© IGN / Géoplateforme · contour cadastral DGFiP indicatif",
+  "licence": "Licence Ouverte / Open License, selon les métadonnées des ressources consultées",
+  "images": [
+    {
+      "file": "tilly-1950-1965.jpg",
+      "period": "1950–1965",
+      "sha256": "0f86ca710448c6dc24ffec53b527fcc33f038751ef77f5462d0e89688945c227",
+      "provider": "IGN / Géoplateforme",
+      "resource": "ORTHOIMAGERY.ORTHOPHOTOS.1950-1965",
+      "edition": "1950–1965",
+      "acquisition_period": "1950–1965",
+      "retrieved_at": "2026-10-20T10:00:42+00:00",
+      "raw_sha256": "61eeb91020d5b509251ec6d317197af501a5acaf188f898de12cdfe0a662b1bc",
+      "matrix_set": "PM_0_18",
+      "style": "BDORTHOHISTORIQUE",
+      "format": "image/png",
+      "source_url": "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS.1950-1965&STYLE=BDORTHOHISTORIQUE&FORMAT=image%2Fpng&TILEMATRIXSET=PM_0_18&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",
+      "zoom": 18,
+      "bbox": [
+        1.525230437597666,
+        49.14254656106001,
+        1.528045452402334,
+        49.14453854893999
+      ],
+      "tile_errors": [],
+      "width": 720,
+      "height": 720,
+      "crs": "EPSG:3857"
+    },
+    {
+      "file": "tilly-recent.jpg",
+      "period": "Mosaïque récente — date locale variable",
+      "sha256": "04e329a9b34d3a0892518576ca1df1699196f799f7c80b5850857eed22e000b9",
+      "provider": "IGN / Géoplateforme",
+      "resource": "ORTHOIMAGERY.ORTHOPHOTOS",
+      "edition": "Actuel",
+      "acquisition_period": "Actuel",
+      "retrieved_at": "2026-10-20T10:00:36+00:00",
+      "raw_sha256": "6e35ea0c923d20845f380d4c5e401b46554cc518ac308c1ec92501d6c18e83b0",
+      "matrix_set": "PM_0_19",
+      "style": "normal",
+      "format": "image/jpeg",
+      "source_url": "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image%2Fjpeg&TILEMATRIXSET=PM_0_19&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}",
+      "zoom": 18,
+      "bbox": [
+        1.525230437597666,
+        49.14254656106001,
+        1.528045452402334,
+        49.14453854893999
+      ],
+      "tile_errors": [],
+      "width": 720,
+      "height": 720,
+      "crs": "EPSG:3857"
+    }
+  ]
+}

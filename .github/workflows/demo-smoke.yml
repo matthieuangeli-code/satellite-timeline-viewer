@@ -7,9 +7,14 @@ on:
       - "scripts/smoke-sitehistory.mjs"
       - "scripts/delivery-ui.mjs"
       - "scripts/preparation-ui.mjs"
+      - "scripts/release-site.mjs"
       - "docs/demo.html"
       - "docs/index.html"
       - "docs/sources.html"
+      - "docs/confidentialite.html"
+      - "docs/service.html"
+      - "docs/404.html"
+      - "docs/sitemap.xml"
       - "docs/assets/**"
   pull_request:
     paths:
@@ -17,9 +22,14 @@ on:
       - "scripts/smoke-sitehistory.mjs"
       - "scripts/delivery-ui.mjs"
       - "scripts/preparation-ui.mjs"
+      - "scripts/release-site.mjs"
       - "docs/demo.html"
       - "docs/index.html"
       - "docs/sources.html"
+      - "docs/confidentialite.html"
+      - "docs/service.html"
+      - "docs/404.html"
+      - "docs/sitemap.xml"
       - "docs/assets/**"
   workflow_dispatch:
 permissions:
@@ -38,7 +48,7 @@ jobs:
           node-version: "22"
       - name: Install Playwright Chromium
         run: |
-          npm install --no-save --package-lock=false playwright@1.56.1 pngjs@7.0.0 leaflet@1.9.4
+          npm install --no-save --package-lock=false playwright@1.56.1 pngjs@7.0.0 leaflet@1.9.4 axe-core@4.10.3
           npx playwright install --with-deps chromium
       - name: Serve this checkout
         run: |
@@ -47,6 +57,8 @@ jobs:
             if curl -fsS http://127.0.0.1:8000/demo.html > /dev/null; then break; fi
             sleep 1
           done
+      - name: Check release navigation, real imagery and accessibility
+        run: node scripts/release-site.mjs
       - name: Check delivery recovery with explicit synthetic API fixtures
         run: node scripts/delivery-ui.mjs
       - name: Check preparation feedback and early cadastral search with synthetic fixtures
