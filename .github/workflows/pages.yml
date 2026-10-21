@@ -36,6 +36,6 @@ jobs:
             url="${BASE}${path}"
             echo "Testing ${url}"
             curl -fLsS --retry 10 --retry-all-errors --retry-delay 6                  --connect-timeout 8 --max-time 20 "${url}" > /tmp/landing.html
-            grep -q 'SiteHistory' /tmp/landing.html
+            grep -q 'Géo-Cadastre' /tmp/landing.html
             echo "HTTP OK: ${url}"
           done
