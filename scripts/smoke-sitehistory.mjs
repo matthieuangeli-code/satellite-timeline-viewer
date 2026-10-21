@@ -3,6 +3,7 @@ import { chromium } from 'playwright';
 import { PNG } from 'pngjs';
 import { mkdir } from 'node:fs/promises';
 const base=process.env.SITEHISTORY_BASE_URL||'https://matthieuangeli-code.github.io/satellite-timeline-viewer';
+const explorerPage=process.env.SITEHISTORY_PREVIEW_CHECK==='1'?'sandbox.html':'demo.html';
 const output=process.env.SITEHISTORY_SCREENSHOTS||'test-results/sitehistory';
 await mkdir(output,{recursive:true});
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
@@ -41,7 +42,7 @@ try {
     }
     return route.continue();
    });
-   const response=await page.goto(base+'/demo.html',{waitUntil:'domcontentloaded',timeout:40000});
+   const response=await page.goto(base+'/'+explorerPage,{waitUntil:'domcontentloaded',timeout:40000});
    if(response.status()!==200)throw Error('Demo HTTP '+response.status());
    await page.locator('#era').waitFor({state:'visible'});
    await page.waitForFunction(()=>document.querySelector('#comparison-state').dataset.oldHash||document.querySelector('#status').classList.contains('failed'),null,{timeout:150000});

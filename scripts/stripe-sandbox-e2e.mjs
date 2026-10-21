@@ -91,7 +91,7 @@ try {
   if(response.ok()){preview=data;protect(preview.preview_token);}else result.previewFailure=safe(data.detail);
   await route.fulfill({response});
  });
- await page.goto(front+'/demo.html',{waitUntil:'domcontentloaded'});
+ await page.goto(front+'/sandbox.html',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>document.querySelector('#comparison-state').dataset.oldHash&&document.querySelector('#candidates').options.length>1,null,{timeout:180000});
  await page.locator('#identifier').fill(parcelId);await page.locator('#identifier-form button').click();
  await page.waitForFunction(id=>document.querySelector('#candidates').value===id&&document.querySelector('#comparison-state').dataset.oldHash,parcelId,{timeout:180000});
