@@ -26,7 +26,7 @@ try{
   if(r.ok())order=data;
   await route.fulfill({response:r});
  });
- await page.goto(front+'/demo.html',{waitUntil:'domcontentloaded'});
+ await page.goto(front+'/sandbox.html',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>document.querySelector('#comparison-state').dataset.oldHash,null,{timeout:180000});
  await page.locator('#identifier').fill(parcel);await page.locator('#identifier-form button').click();
  await page.waitForFunction(id=>document.querySelector('#candidates').value===id&&document.querySelector('#comparison-state').dataset.oldHash,parcel,{timeout:180000});

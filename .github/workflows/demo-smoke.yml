@@ -9,6 +9,7 @@ on:
       - "scripts/preparation-ui.mjs"
       - "scripts/release-site.mjs"
       - "docs/demo.html"
+      - "docs/sandbox.html"
       - "docs/index.html"
       - "docs/sources.html"
       - "docs/confidentialite.html"
@@ -24,6 +25,7 @@ on:
       - "scripts/preparation-ui.mjs"
       - "scripts/release-site.mjs"
       - "docs/demo.html"
+      - "docs/sandbox.html"
       - "docs/index.html"
       - "docs/sources.html"
       - "docs/confidentialite.html"
@@ -39,7 +41,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   browser-smoke:
-    runs-on: ubuntu-latest
+    # Playwright 1.56 supports Ubuntu 24.04; latest moved to 26 in October 2026.
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4

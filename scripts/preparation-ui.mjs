@@ -13,7 +13,7 @@ const caps=`<Capabilities xmlns="http://www.opengis.net/wmts/1.0" xmlns:o="http:
 const parcel=id=>({type:'Feature',properties:{idu:id,nom_com:'Commune SYNTHÉTIQUE',code_insee:'27644',section:'0B',numero:id.slice(-4)},geometry:{type:'Polygon',coordinates:[[[1.5298,49.1498],[1.5302,49.1498],[1.5302,49.1502],[1.5298,49.1502],[1.5298,49.1498]]]}});
 const browser=await chromium.launch({headless:true,args:['--no-sandbox'],...(process.env.CHROMIUM_EXECUTABLE?{executablePath:process.env.CHROMIUM_EXECUTABLE}:{})});
 await mkdir('test-results/preparation-ui',{recursive:true});let passed=0;
-async function scenario(name,reply,run,{slowCatalogue=false,checkoutReply={status:200,json:checkoutSuccess},blockStorage=false}={}){
+async function scenario(name,reply,run,{slowCatalogue=false,checkoutReply={status:200,json:checkoutSuccess},blockStorage=false,pagePath='/sandbox.html'}={}){
  const context=await browser.newContext({viewport:{width:390,height:844}});let requests=0,checkoutRequests=0,releaseCatalogue,releaseCheckout;
  if(blockStorage)await context.addInitScript(()=>{Storage.prototype.setItem=()=>{throw Error('Synthetic blocked storage')}});
  const checkoutGate=new Promise(resolve=>releaseCheckout=resolve);
@@ -47,7 +47,7 @@ async function scenario(name,reply,run,{slowCatalogue=false,checkoutReply={statu
    if(u.origin==='https://checkout.stripe.com')return route.fulfill({contentType:'text/html',body:'<h1>Stripe navigation fixture — no actual payment</h1>'});
    throw Error('Unexpected synthetic request: '+u.origin+u.pathname);
   });
-  const page=await context.newPage();await page.goto(front+'/demo.html',{waitUntil:'domcontentloaded'});
+  const page=await context.newPage();await page.goto(front+pagePath,{waitUntil:'domcontentloaded'});
   await run(page,{releaseCatalogue,releaseReport,releaseCheckout,requests:()=>requests,checkoutRequests:()=>checkoutRequests});
   await page.screenshot({path:`test-results/preparation-ui/${name}.png`,fullPage:true});passed++;console.log('SYNTHETIC preparation passed: '+name);
  }catch(error){
@@ -65,6 +65,17 @@ async function start(page){
  await page.locator('#confirm').click();await page.locator('#prepare').click();
 }
 try{
+ await scenario('public-explorer-never-starts-test-orders',{status:200,json:success},async(page,c)=>{
+  await page.waitForFunction(()=>document.querySelector('#candidates').options.length>1&&document.querySelector('#comparison-state').dataset.oldHash);
+  await identify(page);await page.waitForFunction(()=>document.querySelector('#comparison-state').dataset.oldHash);
+  await page.locator('#confirm').click();
+  assert.ok(await page.locator('#prepare').isDisabled());assert.ok(await page.locator('#report-builder').isHidden());
+  assert.ok(!(await page.locator('body').innerText()).includes('4,90'));
+  assert.ok(!(await page.locator('body').innerText()).includes('4242 4242'));
+  // Even programmatic activation of the hidden controls must not POST an order.
+  await page.evaluate(()=>{for(const id of ['prepare','checkout']){const b=document.getElementById(id);b.disabled=false;b.click()}});
+  assert.equal(c.requests(),0);assert.equal(c.checkoutRequests(),0);
+ },{pagePath:'/demo.html'});
  await scenario('visible-wait-and-ready',{status:200,json:success},async(page,c)=>{
   await start(page);await page.waitForFunction(()=>document.querySelector('#report-status').dataset.state==='preparing');
   assert.ok((await page.locator('#report-status').innerText()).includes('Préparation en cours'));
@@ -124,7 +135,7 @@ try{
  ])await scenario(name,{status:200,json:success},async(page,c)=>{
   await prepared(page,c);await page.locator('#checkout').click();c.releaseCheckout();
   await page.waitForFunction(()=>document.querySelector('#checkout-status').dataset.state==='failed');
-  assert.ok((await page.locator('#checkout-status').innerText()).includes(expected));assert.equal(page.url(),front+'/demo.html');
+  assert.ok((await page.locator('#checkout-status').innerText()).includes(expected));assert.equal(page.url(),front+'/sandbox.html');
   // Chromium rounds scrolling to device pixels; DOM boxes retain fractional pixels.
   const box=await page.locator('#checkout-status').boundingBox();assert.ok(box.y>=-1&&box.y+box.height<=845,'Checkout error outside mobile viewport: '+JSON.stringify(box));
   assert.ok(await page.locator('#checkout-link').isHidden());assert.equal(await page.locator('#checkout').getAttribute('aria-busy'),null);
@@ -139,7 +150,7 @@ try{
   await prepared(page,c);await page.locator('#checkout').click();
   await page.locator('#candidates').selectOption('');c.releaseCheckout();
   await page.waitForFunction(()=>document.querySelector('#checkout-status').dataset.state==='failed');
-  assert.ok((await page.locator('#checkout-status').innerText()).includes('La sélection a changé'));assert.ok(await page.locator('#checkout-link').isHidden());assert.equal(page.url(),front+'/demo.html');
+  assert.ok((await page.locator('#checkout-status').innerText()).includes('La sélection a changé'));assert.ok(await page.locator('#checkout-link').isHidden());assert.equal(page.url(),front+'/sandbox.html');
  });
  console.log(`${passed} synthetic preparation regressions passed; real parcel preparation remains a separate test.`);
 }finally{await browser.close()}

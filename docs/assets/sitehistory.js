@@ -2,6 +2,8 @@
 (async function () {
 'use strict';
 const $=id=>document.getElementById(id), api=(window.SITEHISTORY_API||'').replace(/\/$/,'');
+// The commercial explorer never starts test orders. Sandbox is an explicit page.
+const sandboxMode=document.documentElement.dataset.mode==='sandbox';
 const WMTS='https://data.geopf.fr/wmts', CARTO='https://apicarto.ign.fr/api/cadastre/parcelle';
 let layers=[], candidates=[], selected=null, confirmed=false, generation=0, selectionGeneration=0, prepared=null, preparing=false, checkoutPending=false, preparationVersion=0, requestedAddress='';
 let epoch=0, rendering=0, maps=[], raster=[null,null], outlines=[null,null], validPair=false, debounce;
@@ -12,13 +14,14 @@ const referencePattern=/^(?:[0-9]{5}|2[AB][0-9]{3})[0-9]{3}[A-Z0-9]{2}[0-9]{4}$/
 const normaliseReference=value=>value.replace(/[\s-]/g,'').toUpperCase();
 const node=(tag,text)=>{const n=document.createElement(tag);n.textContent=text;return n};
 const post=async(path,body)=>{
+ if(!sandboxMode)throw Error('Les commandes ne sont pas encore ouvertes. L’exploration reste gratuite.');
  let r;
  try{r=await fetch(api+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(240000)})}
  catch(error){throw Error(error.name==='TimeoutError'||error.name==='AbortError'?'Le délai de réponse du serveur est dépassé. Réessayez plus tard.':'Impossible de joindre le serveur. Vérifiez votre connexion et réessayez.')}
  let d;try{d=await r.json()}catch{throw Error('Le serveur est temporairement indisponible (HTTP '+r.status+'). Réessayez plus tard.')}
  if(!r.ok){const error=Error(typeof d?.detail==='string'?d.detail:'Opération indisponible (HTTP '+r.status+').');error.status=r.status;throw error}return d;
 };
-function updatePrepare(){$('prepare').disabled=preparing||!!prepared||!(api&&confirmed&&validPair)}
+function updatePrepare(){$('prepare').disabled=!sandboxMode||preparing||!!prepared||!(api&&confirmed&&validPair)}
 function resetCheckout(){$('checkout-status').textContent='';$('checkout-status').dataset.state='idle';$('checkout-link').hidden=true;$('checkout-link').removeAttribute('href')}
 function invalidate(){preparationVersion++;confirmed=false;prepared=null;resetCheckout();$('confirm').disabled=!selected;updatePrepare();$('checkout').disabled=true;$('report-status').dataset.state='idle';$('report-status').textContent='Confirmez une parcelle avant de préparer un dossier.'}
 function matrixXML(root,tag){return [...root.getElementsByTagNameNS('*',tag)]}
@@ -128,10 +131,10 @@ async function useAddress(f){const [lon,lat]=f.geometry.coordinates;requestedAdd
 $('search-form').onsubmit=search;$('candidates').onchange=()=>choose($('candidates').value);$('era').onchange=()=>{preparationVersion++;prepared=null;resetCheckout();$('checkout').disabled=true;imagery()};$('outlines').onchange=draw;
 $('identifier-form').onsubmit=async e=>{e.preventDefault();const t=++selectionGeneration;generation++;requestedAddress='';$('found-address').textContent='';const id=normaliseReference($('identifier').value);setCandidates([]);if(!referencePattern.test(id)){status('Identifiant cadastral invalide (14 caractères requis).',true);return}status('Recherche de la référence cadastrale…');try{const fs=(await json(CARTO+'?'+new URLSearchParams({code_insee:id.slice(0,5),section:id.slice(8,10),numero:id.slice(10)}))).features||[];if(t!==selectionGeneration)return;setCandidates(fs.filter(f=>idOf(f)===id));if(selected){$('fit').click();periods()}status(selected?'Référence exacte retrouvée. Vérifiez et confirmez le contour.':'Aucune parcelle avec cette référence exacte.',!selected)}catch(e){if(t===selectionGeneration)status(e.message,true)}};
 $('fit').onclick=()=>{if(selected){const b=L.geoJSON(selected).getBounds().pad(1);maps.forEach(m=>m.fitBounds(b,{maxZoom:18}))}};
-$('confirm').onclick=()=>{if(!selected)return;confirmed=true;$('confirm').disabled=true;$('parcel').textContent=$('parcel').textContent.replace('Sélection candidate — à confirmer','Parcelle confirmée par vous');updatePrepare();$('report-status').textContent=api?'Parcelle confirmée. Vérifiez les données avant tout paiement test.':'Parcelle confirmée. Serveur de rapports non connecté : export et paiement indisponibles.'};
+$('confirm').onclick=()=>{if(!selected)return;confirmed=true;$('confirm').disabled=true;$('parcel').textContent=$('parcel').textContent.replace('Sélection candidate — à confirmer','Parcelle confirmée par vous');updatePrepare();$('report-status').textContent=!sandboxMode?'Parcelle confirmée. Les commandes du dossier complet ouvriront prochainement.':api?'Parcelle confirmée. Vérifiez les données avant tout paiement test.':'Parcelle confirmée. Serveur de rapports non connecté : export et paiement indisponibles.'};
 $('prepare').onclick=async()=>{
  const parcel=idOf(selected||{}),old=$('era').value,version=preparationVersion;
- if(!confirmed||!validPair||preparing||prepared)return;
+ if(!sandboxMode||!confirmed||!validPair||preparing||prepared)return;
  prepared=null;preparing=true;resetCheckout();updatePrepare();$('checkout').disabled=true;
  $('prepare').textContent='Préparation en cours…';$('prepare').setAttribute('aria-busy','true');
  $('report-status').dataset.state='preparing';$('report-status').textContent='Préparation en cours : vérification des sources et création du HTML et du PDF. Le serveur gratuit peut prendre plusieurs minutes. Gardez cet onglet ouvert ; aucun paiement n’est demandé.';
@@ -168,7 +171,7 @@ function rememberedOrder(){
  return null;
 }
 $('checkout').onclick=async()=>{
- if(!prepared||checkoutPending)return;
+ if(!sandboxMode||!prepared||checkoutPending)return;
  const preview=prepared,version=preparationVersion;
  checkoutPending=true;resetCheckout();$('checkout').disabled=true;$('checkout').setAttribute('aria-busy','true');$('checkout').textContent='Ouverture du paiement TEST…';
  $('checkout-status').dataset.state='opening';$('checkout-status').textContent='Connexion à Stripe TEST en cours. Gardez cet onglet ouvert ; aucun débit réel.';$('checkout-status').scrollIntoView({block:'nearest'});

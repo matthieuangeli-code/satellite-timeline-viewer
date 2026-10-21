@@ -61,6 +61,8 @@ try{
    await page.locator('.hero').screenshot({path:`${out}/hero-${width}.png`});
    assert.equal(await page.locator('a[href*="buy.stripe.com"]').count(),0);
    assert.ok((await page.locator('.release-note').innerText()).includes('ventes réelles ne sont pas ouvertes'));
+   const copy=await page.locator('body').innerText();
+   assert.ok(!copy.includes('4,90')&&!copy.includes('4242 4242')&&!copy.includes('paiement fictif'),'Technical sandbox instructions leaked into commercial presentation');
    const target=await page.locator('.offer--paid a').getAttribute('href');
    assert.equal(new URL(target,base).href,base+'demo.html');
    assert.equal((await context.request.get(new URL(target,base).href)).status(),200);
